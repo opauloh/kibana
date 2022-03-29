@@ -12,21 +12,22 @@ import { euiLightVars as theme } from '@kbn/ui-theme';
 
 interface StylesDeps {
   height: string | undefined;
+  isFullScreen?: boolean;
 }
 
-export const useStyles = ({ height = '500px' }: StylesDeps) => {
+export const useStyles = ({ height = '500px', isFullScreen }: StylesDeps) => {
   const { euiTheme } = useEuiTheme();
 
   const cached = useMemo(() => {
     const { border } = euiTheme;
 
     const processTree: CSSObject = {
-      height: `${height}`,
+      height: `${isFullScreen ? 'calc(100vh - 118px)' : height}`,
       position: 'relative',
     };
 
     const detailPanel: CSSObject = {
-      height: `${height}px`,
+      height: `${isFullScreen ? 'calc(100vh - 118px)' : height}`,
       borderRightWidth: '0px',
     };
 
@@ -67,7 +68,7 @@ export const useStyles = ({ height = '500px' }: StylesDeps) => {
       sessionViewerComponent,
       toolBar,
     };
-  }, [height, euiTheme]);
+  }, [height, isFullScreen, euiTheme]);
 
   return cached;
 };
