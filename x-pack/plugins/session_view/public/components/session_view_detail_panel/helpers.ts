@@ -15,7 +15,7 @@ const getDetailPanelProcessLeader = (leader: ProcessFields) => ({
   entryMetaType: leader.entry_meta?.type ?? '',
   userName: leader.user?.name,
   groupName: leader.group?.name ?? '',
-  entryMetaSourceIp: leader.entry_meta?.source.ip ?? '',
+  entryMetaSourceIp: leader.entry_meta?.source?.ip ?? '',
 });
 
 export const getDetailPanelProcess = (process: Process) => {
