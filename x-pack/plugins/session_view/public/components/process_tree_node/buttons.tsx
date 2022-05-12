@@ -15,7 +15,7 @@ export const ChildrenProcessesButton = ({
   onToggle,
   isExpanded,
 }: {
-  onToggle: () => void;
+  onToggle: any;
   isExpanded: boolean;
 }) => {
   const { button, buttonArrow } = useButtonStyles();
@@ -40,7 +40,7 @@ export const AlertButton = ({
   alertsCount,
 }: {
   isExpanded: boolean;
-  onToggle: () => void;
+  onToggle: any;
   alertsCount: number;
 }) => {
   const { alertButton, buttonArrow } = useButtonStyles();

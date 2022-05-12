@@ -22,8 +22,14 @@ import {
   searchProcessTree,
   autoExpandProcessTree,
   updateProcessMap,
+  flattenLeader,
 } from './helpers';
 import { sortProcesses } from '../../../common/utils/sort_processes';
+import {
+  PROCESS_NODE_BASE_HEIGHT,
+  PROCESS_NODE_ALERT_DETAIL_HEIGHT,
+  PROCESS_NODE_ALERT_DETAIL_PADDING,
+} from '../../../common/constants';
 
 interface UseProcessTreeDeps {
   sessionEntityId: string;
@@ -44,7 +50,8 @@ export class ProcessImpl implements Process {
   autoExpand: boolean;
   searchMatched: string | null;
   orphans: Process[];
-
+  expanded: boolean;
+  alertsExpanded: boolean;
   constructor(id: string) {
     this.id = id;
     this.events = [];
@@ -53,6 +60,8 @@ export class ProcessImpl implements Process {
     this.orphans = [];
     this.autoExpand = false;
     this.searchMatched = null;
+    this.expanded = false;
+    this.alertsExpanded = false;
   }
 
   addEvent(newEvent: ProcessEvent) {
@@ -255,6 +264,22 @@ export class ProcessImpl implements Process {
 
     return false;
   }
+
+  getHeight(isSessionLeader: boolean = false) {
+    const alertsDetailHeight = this.alertsExpanded
+      ? this.getAlerts().length * PROCESS_NODE_ALERT_DETAIL_HEIGHT +
+        PROCESS_NODE_ALERT_DETAIL_PADDING
+      : 0;
+    const selfHeight = PROCESS_NODE_BASE_HEIGHT + alertsDetailHeight;
+
+    if (this.expanded && !isSessionLeader) {
+      return this.children.reduce((cumulativeHeight, child) => {
+        return cumulativeHeight + child.getHeight(false);
+      }, selfHeight);
+    }
+
+    return selfHeight;
+  }
 }
 
 export const useProcessTree = ({
@@ -355,5 +380,13 @@ export const useProcessTree = ({
     }
   });
 
-  return { sessionLeader: processMap[sessionEntityId], processMap, searchResults };
+  const getFlattenedLeader = (hideSameGroup = true) =>
+    flattenLeader(processMap, sessionEntityId, orphans, hideSameGroup);
+
+  return {
+    sessionLeader: processMap[sessionEntityId],
+    processMap,
+    searchResults,
+    getFlattenedLeader,
+  };
 };

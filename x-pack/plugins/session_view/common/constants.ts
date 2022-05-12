@@ -55,3 +55,7 @@ export const LOCAL_STORAGE_DISPLAY_OPTIONS_KEY = 'sessionView:displayOptions';
 export const MOUSE_EVENT_PLACEHOLDER = { stopPropagation: () => undefined } as React.MouseEvent;
 
 export const DEBOUNCE_TIMEOUT = 500;
+
+export const PROCESS_NODE_BASE_HEIGHT = 29;
+export const PROCESS_NODE_ALERT_DETAIL_HEIGHT = 145;
+export const PROCESS_NODE_ALERT_DETAIL_PADDING = 13;

@@ -5,6 +5,7 @@
  * 2.0.
  */
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { AutoSizer, List } from 'react-virtualized';
 import { i18n } from '@kbn/i18n';
 import { ProcessTreeNode } from '../process_tree_node';
 import { BackToInvestigatedAlert } from '../back_to_investigated_alert';
@@ -64,6 +65,7 @@ export interface ProcessTreeDeps {
   onShowAlertDetails: (alertUuid: string) => void;
   showTimestamp?: boolean;
   verboseMode?: boolean;
+  height?: number;
 }
 
 export const ProcessTree = ({
@@ -85,12 +87,15 @@ export const ProcessTree = ({
   onShowAlertDetails,
   showTimestamp = true,
   verboseMode = false,
+  height = 500,
 }: ProcessTreeDeps) => {
   const [isInvestigatedEventVisible, setIsInvestigatedEventVisible] = useState<boolean>(true);
   const [isInvestigatedEventAbove, setIsInvestigatedEventAbove] = useState<boolean>(false);
+  const windowingListRef = useRef<List>(null);
+
   const styles = useStyles();
 
-  const { sessionLeader, processMap, searchResults } = useProcessTree({
+  const { sessionLeader, processMap, searchResults, getFlattenedLeader } = useProcessTree({
     sessionEntityId,
     data,
     alerts,
@@ -99,6 +104,8 @@ export const ProcessTree = ({
     verboseMode,
     jumpToEntityId,
   });
+
+  const flattenedLeader = getFlattenedLeader();
 
   const eventsRemaining = useMemo(() => {
     const total = data?.[0]?.total || 0;
@@ -150,11 +157,33 @@ export const ProcessTree = ({
 
       if (!selectedProcess && hasDetails) {
         onProcessSelected(process);
+        windowingListRef.current?.scrollToRow(
+          flattenedLeader.findIndex((p) => p.id === jumpToEntityId)
+        );
       }
     } else if (!selectedProcess) {
       onProcessSelected(sessionLeader);
     }
-  }, [jumpToEntityId, processMap, onProcessSelected, selectedProcess, sessionLeader]);
+  }, [
+    jumpToEntityId,
+    processMap,
+    onProcessSelected,
+    selectedProcess,
+    sessionLeader,
+    flattenedLeader,
+  ]);
+
+  const toggleProcessChildComponent = (process: Process) => {
+    process.expanded = !process.expanded;
+    windowingListRef.current?.recomputeRowHeights();
+    windowingListRef.current?.forceUpdate();
+  };
+
+  const toggleProcessAlerts = (process: Process) => {
+    process.alertsExpanded = !process.alertsExpanded;
+    windowingListRef.current?.recomputeRowHeights();
+    windowingListRef.current?.forceUpdate();
+  };
 
   return (
     <>
@@ -163,44 +192,84 @@ export const ProcessTree = ({
         css={styles.sessionViewProcessTree}
         data-test-subj="sessionView:sessionViewProcessTree"
       >
-        {sessionLeader && (
-          <ProcessTreeNode
-            isSessionLeader
-            process={sessionLeader}
-            onProcessSelected={onProcessSelected}
-            jumpToEntityId={jumpToEntityId}
-            investigatedAlertId={investigatedAlertId}
-            selectedProcess={selectedProcess}
-            scrollerRef={scrollerRef}
-            onChangeJumpToEventVisibility={onChangeJumpToEventVisibility}
-            onShowAlertDetails={onShowAlertDetails}
-            showTimestamp={showTimestamp}
-            verboseMode={verboseMode}
-            searchResults={searchResults}
-            loadPreviousButton={
-              hasPreviousPage ? (
-                <ProcessTreeLoadMoreButton
-                  text={LOAD_PREVIOUS_TEXT}
-                  onClick={fetchPreviousPage}
-                  isFetching={isFetching}
-                  eventsRemaining={eventsRemaining}
-                  forward={false}
-                />
-              ) : null
-            }
-            loadNextButton={
-              hasNextPage ? (
-                <ProcessTreeLoadMoreButton
-                  text={LOAD_NEXT_TEXT}
-                  onClick={fetchNextPage}
-                  isFetching={isFetching}
-                  eventsRemaining={eventsRemaining}
-                  forward={true}
-                />
-              ) : null
-            }
-          />
-        )}
+        <AutoSizer>
+          {({ width }) =>
+            sessionLeader && (
+              <List
+                scrollToAlignment="center"
+                ref={windowingListRef}
+                height={height}
+                rowCount={flattenedLeader.length}
+                rowHeight={({ index }) =>
+                  flattenedLeader[index].getHeight(flattenedLeader[index].id === sessionEntityId)
+                }
+                rowRenderer={({ index, style }) => {
+                  return (
+                    <div style={style}>
+                      {index === 0 ? (
+                        <ProcessTreeNode
+                          isSessionLeader
+                          process={sessionLeader}
+                          onProcessSelected={onProcessSelected}
+                          onToggleChild={toggleProcessChildComponent}
+                          onToggleAlerts={toggleProcessAlerts}
+                          jumpToEntityId={jumpToEntityId}
+                          investigatedAlertId={investigatedAlertId}
+                          selectedProcess={selectedProcess}
+                          // scrollerRef={scrollerRef}
+                          onChangeJumpToEventVisibility={onChangeJumpToEventVisibility}
+                          onShowAlertDetails={onShowAlertDetails}
+                          showTimestamp={showTimestamp}
+                          verboseMode={verboseMode}
+                          searchResults={searchResults}
+                          // loadPreviousButton={
+                          //   hasPreviousPage ? (
+                          //     <ProcessTreeLoadMoreButton
+                          //       text={LOAD_PREVIOUS_TEXT}
+                          //       onClick={fetchPreviousPage}
+                          //       isFetching={isFetching}
+                          //       eventsRemaining={eventsRemaining}
+                          //       forward={false}
+                          //     />
+                          //   ) : null
+                          // }
+                          // loadNextButton={
+                          //   hasNextPage ? (
+                          //     <ProcessTreeLoadMoreButton
+                          //       text={LOAD_NEXT_TEXT}
+                          //       onClick={fetchNextPage}
+                          //       isFetching={isFetching}
+                          //       eventsRemaining={eventsRemaining}
+                          //       forward={true}
+                          //     />
+                          //   ) : null
+                          // }
+                        />
+                      ) : (
+                        <ProcessTreeNode
+                          process={flattenedLeader[index]}
+                          onProcessSelected={onProcessSelected}
+                          onToggleChild={toggleProcessChildComponent}
+                          onToggleAlerts={toggleProcessAlerts}
+                          jumpToEntityId={jumpToEntityId}
+                          investigatedAlertId={investigatedAlertId}
+                          selectedProcess={selectedProcess}
+                          // scrollerRef={scrollerRef}
+                          onChangeJumpToEventVisibility={onChangeJumpToEventVisibility}
+                          onShowAlertDetails={onShowAlertDetails}
+                          showTimestamp={showTimestamp}
+                          verboseMode={verboseMode}
+                          searchResults={searchResults}
+                        />
+                      )}
+                    </div>
+                  );
+                }}
+                width={width || 800}
+              />
+            )
+          }
+        </AutoSizer>
       </div>
       {!isInvestigatedEventVisible && (
         <BackToInvestigatedAlert

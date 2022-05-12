@@ -166,22 +166,27 @@ export interface Process {
   parent: Process | undefined;
   autoExpand: boolean;
   searchMatched: string | null; // either false, or set to searchQuery
+  expanded: boolean;
+  alertsExpanded: boolean;
+  depth?: number;
+  isOrphan?: boolean;
   addEvent(event: ProcessEvent): void;
   addAlert(alert: ProcessEvent): void;
   clearSearch(): void;
+  getAlerts(): ProcessEvent[];
+  getDetails(): ProcessEvent;
+  getChildren(verboseMode: boolean): Process[];
+  getEndTime(): string;
+  getHeight(isSessionLeader: boolean): number;
+  getOutput(): string;
+  getMaxAlertLevel(): number | null;
   hasOutput(): boolean;
   hasAlerts(): boolean;
-  getAlerts(): ProcessEvent[];
-  updateAlertsStatus(updatedAlertsStatus: AlertStatusEventEntityIdMap): void;
   hasExec(): boolean;
-  getOutput(): string;
-  getDetails(): ProcessEvent;
-  isUserEntered(): boolean;
-  getMaxAlertLevel(): number | null;
-  getChildren(verboseMode: boolean): Process[];
-  isVerbose(): boolean;
-  getEndTime(): string;
   isDescendantOf(process: Process): boolean;
+  isUserEntered(): boolean;
+  isVerbose(): boolean;
+  updateAlertsStatus(updatedAlertsStatus: AlertStatusEventEntityIdMap): void;
 }
 
 export type ProcessMap = {

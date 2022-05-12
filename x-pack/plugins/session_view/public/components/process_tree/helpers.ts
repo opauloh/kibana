@@ -224,3 +224,24 @@ export const processNewEvents = (
 
   return [autoExpandProcessTree(updatedProcessMap), newOrphans];
 };
+
+export const flattenLeader = (
+  processMap: ProcessMap,
+  sessionEntityId: string,
+  orphans: Process[],
+  hideSameGroup = true
+): Process[] => {
+  let processArray: Process[] = [];
+  const process = processMap[sessionEntityId];
+  processArray.push(process);
+
+  if (process.children.length) {
+    processArray = processArray.concat(process.children);
+  }
+
+  if (orphans.length) {
+    processArray = processArray.concat(orphans);
+  }
+
+  return processArray;
+};
