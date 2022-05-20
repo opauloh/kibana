@@ -20,11 +20,11 @@ export const useStyles = () => {
     const sessionViewProcessTree: CSSObject = {
       position: 'relative',
       fontFamily: font.familyCode,
-      overflow: 'auto',
+      overflow: 'hidden',
       height: '100%',
       backgroundColor: euiVars.euiColorLightestShade,
       paddingTop: size.base,
-      paddingLeft: size.s,
+      paddingLeft: 0,
     };
 
     const selectionArea: CSSObject = {

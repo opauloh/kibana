@@ -265,12 +265,32 @@ export class ProcessImpl implements Process {
     return false;
   }
 
-  getHeight(isSessionLeader: boolean = false) {
+  getHeight(isSessionLeader: boolean = false, width: number, showTimestamp: boolean) {
+    const rowWidth = width - 15 - 8;
+    const iconWidth = 16 + 8;
+    const timeWidth = showTimestamp ? 260 : 0;
+    console.log(
+      '------------',
+      this.getDetails()?.process?.args?.slice(1)?.join(' '),
+      '------------'
+    );
+    const workDirWidth = this.getDetails()?.process?.working_directory?.length * 8;
+    const commandWidth = this.getDetails()?.process?.args[0]?.length * 8;
+    const argsWidth = this.getDetails()?.process?.args?.slice(1)?.join(' ').length * 8;
+    const textSpacingWidth = 12;
+    console.log({ width, workDirWidth, commandWidth, argsWidth });
+    const totalWidth =
+      iconWidth + timeWidth + workDirWidth + commandWidth + argsWidth + textSpacingWidth;
+    console.log({ rowWidth, totalWidth });
+    const numberOfRows = rowWidth > totalWidth ? 1 : Math.ceil(totalWidth / rowWidth);
+    console.log({ numberOfRows });
     const alertsDetailHeight = this.alertsExpanded
       ? this.getAlerts().length * PROCESS_NODE_ALERT_DETAIL_HEIGHT +
         PROCESS_NODE_ALERT_DETAIL_PADDING
       : 0;
-    const selfHeight = PROCESS_NODE_BASE_HEIGHT + alertsDetailHeight;
+    const PADDING_HEIGHT = 8;
+    const selfHeight =
+      numberOfRows * PROCESS_NODE_BASE_HEIGHT + PADDING_HEIGHT + alertsDetailHeight;
 
     if (this.expanded && !isSessionLeader) {
       return this.children.reduce((cumulativeHeight, child) => {

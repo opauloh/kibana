@@ -20,6 +20,7 @@ import {
 import { useScroll } from '../../hooks/use_scroll';
 import { useStyles } from './styles';
 import { PROCESS_EVENTS_PER_PAGE } from '../../../common/constants';
+import { useResizeObserver } from '@elastic/eui';
 
 type FetchFunction = () => void;
 
@@ -173,6 +174,14 @@ export const ProcessTree = ({
     flattenedLeader,
   ]);
 
+  useEffect(() => {
+    window.addEventListener('resize', () => {
+      setTimeout(() => {
+        windowingListRef.current?.recomputeRowHeights();
+        windowingListRef.current?.forceUpdate();
+      }, 10);
+    });
+  }, []);
   const toggleProcessChildComponent = (process: Process) => {
     process.expanded = !process.expanded;
     windowingListRef.current?.recomputeRowHeights();
@@ -184,6 +193,15 @@ export const ProcessTree = ({
     windowingListRef.current?.recomputeRowHeights();
     windowingListRef.current?.forceUpdate();
   };
+
+  const dimensions = useResizeObserver(scrollerRef.current);
+
+  useEffect(() => {
+    setTimeout(() => {
+      windowingListRef.current?.recomputeRowHeights();
+      windowingListRef.current?.forceUpdate();
+    }, 10);
+  }, [dimensions.width]);
 
   return (
     <>
@@ -201,7 +219,11 @@ export const ProcessTree = ({
                 height={height}
                 rowCount={flattenedLeader.length}
                 rowHeight={({ index }) =>
-                  flattenedLeader[index].getHeight(flattenedLeader[index].id === sessionEntityId)
+                  flattenedLeader[index].getHeight(
+                    flattenedLeader[index].id === sessionEntityId,
+                    width,
+                    showTimestamp
+                  )
                 }
                 rowRenderer={({ index, style }) => {
                   return (

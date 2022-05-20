@@ -96,6 +96,7 @@ export const useStyles = ({
       cursor: 'pointer',
       position: 'relative',
       marginBottom: isSessionLeader ? size.s : '0px',
+      paddingLeft: 8,
       '&:hover:before': {
         backgroundColor: hoverColor,
       },
@@ -162,9 +163,14 @@ export const useStyles = ({
       fontSize: size.m,
       fontWeight: font.weight.regular,
       paddingRight: size.base,
-      paddingLeft: size.xxl,
+      paddingLeft: size.xl,
       position: 'relative',
       lineHeight: LINE_HEIGHT,
+      width: 260,
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      textAlign: 'right',
     };
 
     const alertDetails: CSSObject = {

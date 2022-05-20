@@ -233,7 +233,6 @@ export function ProcessTreeNode({
     user,
   } = processDetails.process;
 
-  console.log(expanded);
   const shouldRenderChildren = expanded && children?.length > 0;
   const childrenTreeDepth = depth + 1;
 
@@ -286,9 +285,9 @@ export function ProcessTreeNode({
                 <EuiIcon data-test-subj={iconTestSubj} type={processIcon} css={styles.icon} />
               </EuiToolTip>
               <span ref={textRef} css={styles.textSection}>
-                <span css={styles.workingDir}>{dataOrDash(workingDirectory)}</span>
+                <SplitText css={styles.workingDir}>{dataOrDash(workingDirectory)}</SplitText>
                 <Nbsp />
-                <span css={styles.darkText}>{dataOrDash(args?.[0])}</span>
+                <SplitText css={styles.darkText}>{dataOrDash(args?.[0]) || ''}</SplitText>
                 <Nbsp />
                 <SplitText>{args?.slice(1).join(' ') || ''}</SplitText>
               </span>

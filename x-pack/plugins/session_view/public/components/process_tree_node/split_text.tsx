@@ -18,6 +18,9 @@ const css: CSSObject = {
     display: 'inline',
     fontSize: 0,
     lineHeight: 0,
+    span: {
+      width: 8,
+    },
   },
 };
 
@@ -27,10 +30,10 @@ const css: CSSObject = {
 // It adds a `aria-label` attribute to a parent span, which is used by screen readers to
 // read the text as a single block.
 export const SplitText = ({ children, role = 'document', ...props }: Props) => (
-  <span css={css} aria-label={children} role={role}>
+  <span css={css} aria-label={children} role={role} {...props}>
     {children.split('').map(function (char, index) {
       return (
-        <span aria-hidden="true" key={index} {...props}>
+        <span aria-hidden="true" key={index}>
           {char === ' ' ? <>&nbsp;</> : char}
         </span>
       );

@@ -15,10 +15,13 @@ import { DASH } from '../constants';
  * @param  {String | Number | undefined} data
  * @return {String | Number} either data itself or if invalid, a dash ('-')
  */
-export const dataOrDash = (data: string | number | undefined): string | number => {
+export function dataOrDash(x: string | undefined): string;
+export function dataOrDash(x: number): number;
+
+export function dataOrDash(data: string | number | undefined) {
   if (data === undefined || data === '' || (typeof data === 'number' && isNaN(data))) {
     return DASH;
   }
 
   return data;
-};
+}
