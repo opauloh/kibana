@@ -227,7 +227,7 @@ export function ProcessTreeNode({
     user,
   } = processDetails.process;
 
-  const shouldRenderChildren = isSessionLeader || exoabded && children?.length > 0;
+  const shouldRenderChildren = isSessionLeader || (expanded && children?.length > 0);
   const childrenTreeDepth = depth + 1;
 
   const showUserEscalation = !isSessionLeader && !!user?.name && user.name !== parent?.user?.name;
