@@ -35,9 +35,10 @@ export const RULE_NAME = i18n.translate('xpack.csp.rules.rulesTable.rulesTableCo
   defaultMessage: 'Rule Name',
 });
 
-export const SECTION = i18n.translate('xpack.csp.rules.rulesTable.rulesTableColumn.sectionLabel', {
-  defaultMessage: 'Section',
-});
+export const CIS_SECTION = i18n.translate(
+  'xpack.csp.rules.rulesTable.rulesTableColumn.cisSectionLabel',
+  { defaultMessage: 'CIS Section' }
+);
 
 export const LAST_MODIFIED = i18n.translate(
   'xpack.csp.rules.rulesTable.rulesTableColumn.lastModifiedLabel',
@@ -80,10 +81,11 @@ export const OVERVIEW = i18n.translate('xpack.csp.rules.ruleFlyout.tabs.overview
   defaultMessage: 'Overview',
 });
 
-export const REGO_CODE = i18n.translate('xpack.csp.rules.ruleFlyout.tabs.regoCodeTabLabel', {
-  defaultMessage: 'Rego Code',
-});
-
 export const REMEDIATION = i18n.translate('xpack.csp.rules.ruleFlyout.tabs.remediationTabLabel', {
   defaultMessage: 'Remediation',
+});
+
+export const DATA_UPDATE_INFO = i18n.translate('xpack.csp.rules.dataUpdateInfoCallout', {
+  defaultMessage:
+    'Please note, any changes to your benchmark rules will take effect the next time your resources are evaluated. This can take up to ~5 hours',
 });

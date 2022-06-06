@@ -134,7 +134,6 @@ export const useStyles = ({
         fontSize: FONT_SIZE,
         lineHeight: LINE_HEIGHT,
         verticalAlign: 'middle',
-        display: 'inline-block',
       },
     };
 
@@ -193,6 +192,7 @@ export const useStyles = ({
       textOverflow: 'ellipsis',
       whiteSpace: 'nowrap',
       textAlign: 'right',
+      marginTop: '1px',
     };
 
     const alertDetails: CSSObject = {

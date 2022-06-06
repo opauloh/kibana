@@ -15,7 +15,6 @@ import {
   AlertStatusEventEntityIdMap,
   Process,
   ProcessEventsPage,
-  ProcessEvent,
 } from '../../../common/types/process_tree';
 import { useScroll } from '../../hooks/use_scroll';
 import { useStyles } from './styles';
@@ -43,7 +42,6 @@ export interface ProcessTreeDeps {
   sessionEntityId: string;
 
   data: ProcessEventsPage[];
-  alerts: ProcessEvent[];
 
   jumpToEntityId?: string;
   investigatedAlertId?: string;
@@ -72,7 +70,6 @@ export interface ProcessTreeDeps {
 export const ProcessTree = ({
   sessionEntityId,
   data,
-  alerts,
   jumpToEntityId,
   investigatedAlertId,
   isFetching,
@@ -99,7 +96,6 @@ export const ProcessTree = ({
   const { sessionLeader, processMap, searchResults, getFlattenedLeader } = useProcessTree({
     sessionEntityId,
     data,
-    alerts,
     searchQuery,
     updatedAlertsStatus,
     verboseMode,
