@@ -265,37 +265,38 @@ export class ProcessImpl implements Process {
     return false;
   }
 
-  getHeight(isSessionLeader: boolean = false, width: number, showTimestamp: boolean) {
+  getHeight(isSessionLeader: boolean = false, width: number, showTimestamp: boolean, isLastResult) {
     const rowWidth = width - 15 - 8;
     const iconWidth = 16 + 8;
     const timeWidth = showTimestamp ? 260 : 0;
-    console.log(
-      '------------',
-      this.getDetails()?.process?.args?.slice(1)?.join(' '),
-      '------------'
-    );
-    const workDirWidth = this.getDetails()?.process?.working_directory?.length * 8;
-    const commandWidth = this.getDetails()?.process?.args[0]?.length * 8;
-    const argsWidth = this.getDetails()?.process?.args?.slice(1)?.join(' ').length * 8;
+    const workDirWidth = (this.getDetails()?.process?.working_directory?.length || 0) * 8;
+    const commandWidth = (this.getDetails()?.process?.args?.[0]?.length || 0) * 8;
+    const argsWidth = (this.getDetails()?.process?.args?.slice(1)?.join(' ').length || 0) * 8;
     const textSpacingWidth = 12;
-    console.log({ width, workDirWidth, commandWidth, argsWidth });
     const totalWidth =
       iconWidth + timeWidth + workDirWidth + commandWidth + argsWidth + textSpacingWidth;
-    console.log({ rowWidth, totalWidth });
+
+    console.log({ iconWidth, timeWidth, workDirWidth, commandWidth, argsWidth, textSpacingWidth });
+
     const numberOfRows = rowWidth > totalWidth ? 1 : Math.ceil(totalWidth / rowWidth);
-    console.log({ numberOfRows });
+
+    console.log({ rowWidth, totalWidth, numberOfRows });
     const alertsDetailHeight = this.alertsExpanded
-      ? this.getAlerts().length * PROCESS_NODE_ALERT_DETAIL_HEIGHT +
+      ? (this.getAlerts().length || 0) * PROCESS_NODE_ALERT_DETAIL_HEIGHT +
         PROCESS_NODE_ALERT_DETAIL_PADDING
       : 0;
     const PADDING_HEIGHT = 8;
-    const selfHeight =
-      numberOfRows * PROCESS_NODE_BASE_HEIGHT + PADDING_HEIGHT + alertsDetailHeight;
+    let selfHeight = numberOfRows * PROCESS_NODE_BASE_HEIGHT + PADDING_HEIGHT + alertsDetailHeight;
 
+    console.log(selfHeight);
     if (this.expanded && !isSessionLeader) {
       return this.children.reduce((cumulativeHeight, child) => {
-        return cumulativeHeight + child.getHeight(false);
+        return cumulativeHeight + child.getHeight(false, width - 8, showTimestamp);
       }, selfHeight);
+    }
+
+    if (isSessionLeader || isLastResult) {
+      selfHeight += 16;
     }
 
     return selfHeight;

@@ -39,6 +39,7 @@ import { Nbsp } from './nbsp';
 export interface ProcessDeps {
   process: Process;
   isSessionLeader?: boolean;
+  isLastResult?: boolean;
   depth?: number;
   onProcessSelected?: (process: Process) => void;
   jumpToEntityId?: string;
@@ -62,6 +63,7 @@ export interface ProcessDeps {
 export function ProcessTreeNode({
   process,
   isSessionLeader = false,
+  isLastResult = false,
   depth = 0,
   onProcessSelected,
   jumpToEntityId,
@@ -246,97 +248,103 @@ export function ProcessTreeNode({
   const timeStampsNormal = formatDate(start, KIBANA_DATE_FORMAT);
 
   return (
-    <div>
-      <div
-        data-id={id}
-        key={id + searchMatched}
-        css={styles.processNode}
-        data-test-subj="sessionView:processTreeNode"
-        // ref={nodeRef}
-      >
-        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events */}
+    <>
+      <div>
         <div
-          data-test-subj="sessionView:processTreeNodeRow"
-          css={styles.wrapper}
-          onClick={onProcessClicked}
+          data-id={id}
+          key={id + searchMatched}
+          css={styles.processNode}
+          data-test-subj="sessionView:processTreeNode"
+          // ref={nodeRef}
         >
-          {isSessionLeader ? (
-            <span css={styles.sessionLeader}>
-              <EuiIcon type={sessionIcon} css={styles.icon} />
-              <Nbsp />
-              <b css={styles.darkText}>{dataOrDash(name || args?.[0])}</b>
-              <Nbsp />
-              <span>
-                <FormattedMessage id="xpack.sessionView.startedBy" defaultMessage="started by" />
-              </span>
-              <Nbsp />
-              <EuiIcon type="user" />
-              <Nbsp />
-              <b css={styles.darkText}>{dataOrDash(user?.name)}</b>
-            </span>
-          ) : (
-            <>
-              {showTimestamp && (
-                <span data-test-subj="sessionView:processTreeNodeTimestamp" css={styles.timeStamp}>
-                  {timeStampsNormal}
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events */}
+          <div
+            data-test-subj="sessionView:processTreeNodeRow"
+            css={styles.wrapper}
+            className={isSessionLeader ? 'isSessionLeader' : isLastResult ? 'isLastResult' : ''}
+            onClick={onProcessClicked}
+          >
+            {isSessionLeader ? (
+              <span css={styles.sessionLeader}>
+                <EuiIcon type={sessionIcon} css={styles.icon} />
+                <Nbsp />
+                <b css={styles.darkText}>{dataOrDash(name || args?.[0])}</b>
+                <Nbsp />
+                <span>
+                  <FormattedMessage id="xpack.sessionView.startedBy" defaultMessage="started by" />
                 </span>
-              )}
-              <EuiToolTip position="top" content={iconTooltip}>
-                <EuiIcon data-test-subj={iconTestSubj} type={processIcon} css={styles.icon} />
-              </EuiToolTip>
-              <span ref={textRef} css={styles.textSection}>
-                <SplitText css={styles.workingDir}>{dataOrDash(workingDirectory)}</SplitText>
                 <Nbsp />
-                <SplitText css={styles.darkText}>{dataOrDash(args?.[0]) || ''}</SplitText>
+                <EuiIcon type="user" />
                 <Nbsp />
-                <SplitText>{args?.slice(1).join(' ') || ''}</SplitText>
+                <b css={styles.darkText}>{dataOrDash(user?.name)}</b>
               </span>
-            </>
-          )}
+            ) : (
+              <>
+                {showTimestamp && (
+                  <span
+                    data-test-subj="sessionView:processTreeNodeTimestamp"
+                    css={styles.timeStamp}
+                  >
+                    {timeStampsNormal}
+                  </span>
+                )}
+                <EuiToolTip position="top" content={iconTooltip}>
+                  <EuiIcon data-test-subj={iconTestSubj} type={processIcon} css={styles.icon} />
+                </EuiToolTip>
+                <span ref={textRef} css={styles.textSection}>
+                  <SplitText css={styles.workingDir}>{dataOrDash(workingDirectory)}</SplitText>
+                  <Nbsp />
+                  <SplitText css={styles.darkText}>{dataOrDash(args?.[0]) || ''}</SplitText>
+                  <Nbsp />
+                  <SplitText>{args?.slice(1).join(' ') || ''}</SplitText>
+                </span>
+              </>
+            )}
 
-          {showUserEscalation && (
-            <EuiButton
-              data-test-subj="sessionView:processTreeNodeRootEscalationFlag"
-              css={buttonStyles.userChangedButton}
-            >
-              <FormattedMessage
-                id="xpack.sessionView.execUserChange"
-                defaultMessage="Exec user change: "
+            {showUserEscalation && (
+              <EuiButton
+                data-test-subj="sessionView:processTreeNodeRootEscalationFlag"
+                css={buttonStyles.userChangedButton}
+              >
+                <FormattedMessage
+                  id="xpack.sessionView.execUserChange"
+                  defaultMessage="Exec user change: "
+                />
+                <span>{user.name}</span>
+              </EuiButton>
+            )}
+            {!isSessionLeader && children.length > 0 && (
+              <ChildrenProcessesButton
+                isExpanded={expanded}
+                onToggle={() => {
+                  onToggleChild(process);
+                }}
               />
-              <span>{user.name}</span>
-            </EuiButton>
-          )}
-          {!isSessionLeader && children.length > 0 && (
-            <ChildrenProcessesButton
-              isExpanded={expanded}
-              onToggle={() => {
-                onToggleChild(process);
-              }}
-            />
-          )}
-          {alerts.length > 0 && (
-            <AlertButton
-              onToggle={onToggleAlerts}
-              isExpanded={alertsExpanded}
-              alertsCount={alerts.length}
-            />
-          )}
+            )}
+            {alerts.length > 0 && (
+              <AlertButton
+                onToggle={onToggleAlerts}
+                isExpanded={alertsExpanded}
+                alertsCount={alerts.length}
+              />
+            )}
+          </div>
         </div>
+
+        {alertsExpanded && (
+          <ProcessTreeAlerts
+            alerts={alerts}
+            investigatedAlertId={investigatedAlertId}
+            isProcessSelected={isSelected}
+            onAlertSelected={onProcessClicked}
+            onShowAlertDetails={onShowAlertDetails}
+          />
+        )}
       </div>
-
-      {alertsExpanded && (
-        <ProcessTreeAlerts
-          alerts={alerts}
-          investigatedAlertId={investigatedAlertId}
-          isProcessSelected={isSelected}
-          onAlertSelected={onProcessClicked}
-          onShowAlertDetails={onShowAlertDetails}
-        />
-      )}
-
       {shouldRenderChildren && (
         <div css={styles.children}>
           {/* {loadPreviousButton} */}
+          <div css={styles.processIdentMarker} />
           {children.map((child) => {
             return (
               <ProcessTreeNode
@@ -361,6 +369,6 @@ export function ProcessTreeNode({
           {/* {loadNextButton} */}
         </div>
       )}
-    </div>
+    </>
   );
 }

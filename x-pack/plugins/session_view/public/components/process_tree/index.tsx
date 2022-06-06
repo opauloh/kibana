@@ -203,6 +203,8 @@ export const ProcessTree = ({
     }, 10);
   }, [dimensions.width]);
 
+  const flattenedListLength = flattenedLeader.length;
+
   return (
     <>
       <div
@@ -214,6 +216,7 @@ export const ProcessTree = ({
           {({ width }) =>
             sessionLeader && (
               <List
+                css={styles.processTree}
                 scrollToAlignment="center"
                 ref={windowingListRef}
                 height={height}
@@ -222,7 +225,8 @@ export const ProcessTree = ({
                   flattenedLeader[index].getHeight(
                     flattenedLeader[index].id === sessionEntityId,
                     width,
-                    showTimestamp
+                    showTimestamp,
+                    index === flattenedListLength - 1
                   )
                 }
                 rowRenderer={({ index, style }) => {
@@ -244,6 +248,7 @@ export const ProcessTree = ({
                           showTimestamp={showTimestamp}
                           verboseMode={verboseMode}
                           searchResults={searchResults}
+                          depth={1}
                           // loadPreviousButton={
                           //   hasPreviousPage ? (
                           //     <ProcessTreeLoadMoreButton
@@ -282,6 +287,8 @@ export const ProcessTree = ({
                           showTimestamp={showTimestamp}
                           verboseMode={verboseMode}
                           searchResults={searchResults}
+                          isLastResult={index === flattenedListLength - 1}
+                          depth={2}
                         />
                       )}
                     </div>

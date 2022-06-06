@@ -23,7 +23,7 @@ export const useStyles = () => {
       overflow: 'hidden',
       height: '100%',
       backgroundColor: euiVars.euiColorLightestShade,
-      paddingTop: size.base,
+      // paddingTop: size.base,
       paddingLeft: 0,
     };
 
@@ -39,6 +39,29 @@ export const useStyles = () => {
       transform: `translateY(-${size.xs})`,
     };
 
+    const processTree: CSSObject = {
+      '&>div[role="rowgroup"]': {
+        '&:before': {
+          borderLeft: `2px dotted ${euiTheme.colors.lightShade}`,
+          position: 'absolute',
+          height: 'calc(100% - 64px)',
+          content: `''`,
+          left: '22px',
+          top: '46px',
+        },
+        '&:after': {
+          content: `''`,
+          left: '22px',
+          bottom: '16px',
+          backgroundColor: euiTheme.colors.lightShade,
+          width: '8px',
+          height: '2px',
+          borderRadius: '2px',
+          position: 'absolute',
+        },
+      },
+    };
+
     const defaultSelected = transparentize(colors.primary, 0.008);
     const alertSelected = transparentize(colors.danger, 0.008);
 
@@ -47,6 +70,7 @@ export const useStyles = () => {
       selectionArea,
       defaultSelected,
       alertSelected,
+      processTree,
     };
   }, [euiTheme, euiVars]);
 

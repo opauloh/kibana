@@ -33,8 +33,8 @@ export const useStyles = ({
     const ALERT_INDICATOR_WIDTH = '3px';
     const LINE_HEIGHT = '21px';
     const FONT_SIZE = '13px';
-    const TREE_INDENT = `calc(${size.l} + ${size.xxs})`;
-    const PROCESS_TREE_LEFT_PADDING = size.s;
+    const TREE_INDENT = size.base;
+    const PROCESS_TREE_LEFT_PADDING = '8px';
 
     const darkText: CSSObject = {
       color: colors.text,
@@ -44,11 +44,26 @@ export const useStyles = ({
     const children: CSSObject = {
       position: 'relative',
       color: colors.ghost,
-      marginLeft: size.base,
-      paddingLeft: size.s,
       borderLeft: border.editable,
+      paddingLeft: '8px',
     };
 
+    const processIdentMarker: CSSObject = {
+      position: 'absolute',
+      left: '20px',
+      height: '100%',
+      borderLeft: `2px dotted ${colors.lightShade}`,
+      '&:after': {
+        position: 'absolute',
+        content: `''`,
+        bottom: 0,
+        left: '-5px',
+        backgroundColor: colors.lightShade,
+        width: '7px',
+        height: '2px',
+        borderRadius: '2px',
+      },
+    };
     const icon: CSSObject = {
       color: euiVars.euiColorDarkShade,
     };
@@ -96,7 +111,8 @@ export const useStyles = ({
       cursor: 'pointer',
       position: 'relative',
       marginBottom: isSessionLeader ? size.s : '0px',
-      paddingLeft: 8,
+      // paddingLeft: 8,
+      paddingLeft: isSessionLeader ? TREE_INDENT : `calc((${depth} * ${TREE_INDENT}) + 8px)`,
       '&:hover:before': {
         backgroundColor: hoverColor,
       },
@@ -149,6 +165,12 @@ export const useStyles = ({
         marginLeft: '6px',
         marginRight: size.xxs,
       },
+      '&.isSessionLeader': {
+        marginTop: size.base,
+      },
+      '&.isLastResult': {
+        marginBottom: size.base,
+      },
     };
 
     const workingDir: CSSObject = {
@@ -191,6 +213,7 @@ export const useStyles = ({
       icon,
       textSection,
       sessionLeader,
+      processIdentMarker,
     };
   }, [depth, euiTheme, hasAlerts, hasInvestigatedAlert, isSelected, euiVars, isSessionLeader]);
 
