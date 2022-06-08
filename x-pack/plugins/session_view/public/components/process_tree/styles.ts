@@ -51,7 +51,7 @@ export const useStyles = () => {
         },
         '&:after': {
           content: `''`,
-          left: '22px',
+          left: '19px',
           bottom: '16px',
           backgroundColor: euiTheme.colors.lightShade,
           width: '8px',

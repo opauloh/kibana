@@ -296,11 +296,8 @@ export class ProcessImpl implements Process {
     const totalWidth =
       iconWidth + timeWidth + workDirWidth + commandWidth + argsWidth + textSpacingWidth;
 
-    console.log({ iconWidth, timeWidth, workDirWidth, commandWidth, argsWidth, textSpacingWidth });
-
     const numberOfRows = rowWidth > totalWidth ? 1 : Math.ceil(totalWidth / rowWidth);
 
-    console.log({ rowWidth, totalWidth, numberOfRows });
     const alertsDetailHeight = this.alertsExpanded
       ? (this.getAlerts().length || 0) * PROCESS_NODE_ALERT_DETAIL_HEIGHT +
         PROCESS_NODE_ALERT_DETAIL_PADDING
@@ -308,7 +305,6 @@ export class ProcessImpl implements Process {
     const PADDING_HEIGHT = 8;
     let selfHeight = numberOfRows * PROCESS_NODE_BASE_HEIGHT + PADDING_HEIGHT + alertsDetailHeight;
 
-    console.log(selfHeight);
     if (this.expanded && !isSessionLeader) {
       return this.children.reduce((cumulativeHeight, child) => {
         return cumulativeHeight + child.getHeight(false, width - 8, showTimestamp);

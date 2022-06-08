@@ -43,21 +43,24 @@ export const useStyles = ({
 
     const children: CSSObject = {
       position: 'relative',
-      color: colors.ghost,
-      borderLeft: border.editable,
+      // color: colors.ghost,
+      // borderLeft: border.editable,
       paddingLeft: '8px',
+      // '.processTreeNode': {
+      //   marginLeft: `calc(-${depth - 1} * ${PROCESS_TREE_LEFT_PADDING})`,
+      // },
     };
 
     const processIdentMarker: CSSObject = {
       position: 'absolute',
-      left: '20px',
+      left: `calc((${depth} * ${TREE_INDENT}) + 12px)`,
       height: '100%',
       borderLeft: `2px dotted ${colors.lightShade}`,
       '&:after': {
         position: 'absolute',
         content: `''`,
         bottom: 0,
-        left: '-5px',
+        left: `-5px`,
         backgroundColor: colors.lightShade,
         width: '7px',
         height: '2px',
@@ -111,8 +114,10 @@ export const useStyles = ({
       cursor: 'pointer',
       position: 'relative',
       marginBottom: isSessionLeader ? size.s : '0px',
-      // paddingLeft: 8,
-      paddingLeft: isSessionLeader ? TREE_INDENT : `calc((${depth} * ${TREE_INDENT}) + 8px)`,
+      // marginLeft: isSessionLeader ? 0 : `calc(-${depth} * ${PROCESS_TREE_LEFT_PADDING})`,
+      paddingLeft: isSessionLeader
+        ? TREE_INDENT
+        : `calc((${depth} * ${TREE_INDENT}) + ${PROCESS_TREE_LEFT_PADDING})`,
       '&:hover:before': {
         backgroundColor: hoverColor,
       },
@@ -121,10 +126,10 @@ export const useStyles = ({
         height: '100%',
         pointerEvents: 'none',
         content: `''`,
-        marginLeft: `calc(-${depth} * ${TREE_INDENT} - ${PROCESS_TREE_LEFT_PADDING})`,
+        marginLeft: `calc(-${depth} * ${TREE_INDENT} - ${depth} * ${PROCESS_TREE_LEFT_PADDING})`,
         borderLeft: `${ALERT_INDICATOR_WIDTH} solid ${borderColor}`,
         backgroundColor: bgColor,
-        width: `calc(100% + ${depth} * ${TREE_INDENT} + ${PROCESS_TREE_LEFT_PADDING})`,
+        width: `calc(100% + ${depth} * ${PROCESS_TREE_LEFT_PADDING})`,
       },
     };
 

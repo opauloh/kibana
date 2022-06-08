@@ -227,7 +227,7 @@ export function ProcessTreeNode({
     user,
   } = processDetails.process;
 
-  const shouldRenderChildren = isSessionLeader || (expanded && children?.length > 0);
+  const shouldRenderChildren = expanded && children?.length > 0;
   const childrenTreeDepth = depth + 1;
 
   const showUserEscalation = !isSessionLeader && !!user?.name && user.name !== parent?.user?.name;
@@ -246,6 +246,7 @@ export function ProcessTreeNode({
           data-id={id}
           key={id + searchMatched}
           css={styles.processNode}
+          className="processTreeNode"
           data-test-subj="sessionView:processTreeNode"
           // ref={nodeRef}
         >
