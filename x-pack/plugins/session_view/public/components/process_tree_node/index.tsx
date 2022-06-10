@@ -77,29 +77,33 @@ export function ProcessTreeNode({
   onShowAlertDetails,
   loadPreviousButton,
   loadNextButton,
-  onToggleChild,
-  onToggleAlerts,
-}: ProcessDeps) {
+  // onToggleChild,
+  // onToggleAlerts,
+  batchUpdateRowHeight,
+}: // nodeRef,
+// parentProcess,
+ProcessDeps) {
   const textRef = useRef<HTMLSpanElement>(null);
 
-  // const [childrenExpanded, setChildrenExpanded] = useState(isSessionLeader || process.autoExpand);
-  // const [alertsExpanded, setAlertsExpanded] = useState(false);
-  const { searchMatched, expanded, alertsExpanded } = process;
+  const [childrenExpanded, setChildrenExpanded] = useState(process.autoExpand);
+  const [alertsExpanded, setAlertsExpanded] = useState(false);
+  // const { searchMatched, expanded, alertsExpanded } = process;
+  const { searchMatched } = process;
 
   const dateFormat = useDateFormat();
 
   // forces nodes to expand if the selected process is a descendant
-  // useEffect(() => {
-  //   if (!childrenExpanded && selectedProcess) {
-  //     if (selectedProcess.isDescendantOf(process)) {
-  //       setChildrenExpanded(true);
-  //     }
-  //   }
-  // }, [selectedProcess, process, childrenExpanded]);
+  useEffect(() => {
+    if (!childrenExpanded && selectedProcess) {
+      if (selectedProcess.isDescendantOf(process)) {
+        setChildrenExpanded(true);
+      }
+    }
+  }, [selectedProcess, process, childrenExpanded]);
 
-  // useEffect(() => {
-  //   setChildrenExpanded(process.autoExpand);
-  // }, [process.autoExpand]);
+  useEffect(() => {
+    setChildrenExpanded(process.autoExpand);
+  }, [process.autoExpand]);
 
   const alerts = process.getAlerts();
   const hasAlerts = useMemo(() => !!alerts.length, [alerts]);
@@ -135,11 +139,11 @@ export function ProcessTreeNode({
   // }, [selectedProcess, process, nodeRef]);
 
   // Automatically expand alerts list when investigating an alert
-  // useEffect(() => {
-  //   if (hasInvestigatedAlert) {
-  //     setAlertsExpanded(true);
-  //   }
-  // }, [hasInvestigatedAlert]);
+  useEffect(() => {
+    if (hasInvestigatedAlert) {
+      setAlertsExpanded(true);
+    }
+  }, [hasInvestigatedAlert]);
 
   useLayoutEffect(() => {
     if (searchMatched !== null && textRef.current) {
@@ -157,13 +161,13 @@ export function ProcessTreeNode({
     }
   }, [searchMatched, styles.searchHighlight]);
 
-  // const onChildrenToggle = useCallback(() => {
-  //   setChildrenExpanded(!childrenExpanded);
-  // }, [childrenExpanded]);
+  const onChildrenToggle = useCallback(() => {
+    setChildrenExpanded(!childrenExpanded);
+  }, [childrenExpanded]);
 
-  // const onAlertsToggle = useCallback(() => {
-  //   setAlertsExpanded(!alertsExpanded);
-  // }, [alertsExpanded]);
+  const onAlertsToggle = useCallback(() => {
+    setAlertsExpanded(!alertsExpanded);
+  }, [alertsExpanded]);
 
   const onProcessClicked = useCallback(
     (e: MouseEvent) => {
@@ -227,7 +231,7 @@ export function ProcessTreeNode({
     user,
   } = processDetails.process;
 
-  const shouldRenderChildren = expanded && children?.length > 0;
+  const shouldRenderChildren = !isSessionLeader && childrenExpanded && children?.length > 0;
   const childrenTreeDepth = depth + 1;
 
   const showUserEscalation = !isSessionLeader && !!user?.name && user.name !== parent?.user?.name;
@@ -239,6 +243,24 @@ export function ProcessTreeNode({
 
   const timeStampsNormal = formatDate(start, dateFormat);
 
+  // const nodeHeight = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // process.setHeight(nodeHeight.current?.clientHeight);
+    // console.log(nodeHeight.current?.clientHeight);
+    // setTimeout(() => {
+    // const ref = nodeRef ? nodeRef : nodeHeight;
+    // process.setHeight(ref.current?.clientHeight);
+    // console.log(ref.current?.clientHeight);
+    batchUpdateRowHeight?.();
+    // console.log('LOL');
+    // }, 100);
+  }, [childrenExpanded, alertsExpanded]);
+
+  // const batchUpdateRowHeights = () => {
+  //   batchUpdateRowHeight(process, nodeRef);
+  // };
+
   return (
     <>
       <div>
@@ -248,7 +270,7 @@ export function ProcessTreeNode({
           css={styles.processNode}
           className="processTreeNode"
           data-test-subj="sessionView:processTreeNode"
-          // ref={nodeRef}
+          // node={nodeRef}
         >
           {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events */}
           <div
@@ -307,16 +329,11 @@ export function ProcessTreeNode({
               </EuiButton>
             )}
             {!isSessionLeader && children.length > 0 && (
-              <ChildrenProcessesButton
-                isExpanded={expanded}
-                onToggle={() => {
-                  onToggleChild(process);
-                }}
-              />
+              <ChildrenProcessesButton isExpanded={childrenExpanded} onToggle={onChildrenToggle} />
             )}
             {alerts.length > 0 && (
               <AlertButton
-                onToggle={onToggleAlerts}
+                onToggle={onAlertsToggle}
                 isExpanded={alertsExpanded}
                 alertsCount={alerts.length}
               />
@@ -354,8 +371,11 @@ export function ProcessTreeNode({
                 // scrollerRef={scrollerRef}
                 onChangeJumpToEventVisibility={onChangeJumpToEventVisibility}
                 onShowAlertDetails={onShowAlertDetails}
-                onToggleAlerts={onToggleAlerts}
-                onToggleChild={onToggleChild}
+                // onToggleAlerts={onToggleAlerts}
+                // onToggleChild={onToggleChild}
+                batchUpdateRowHeight={batchUpdateRowHeight}
+                // nodeRef={nodeRef}
+                // parentProcess={process}
               />
             );
           })}

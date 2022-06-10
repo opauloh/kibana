@@ -180,14 +180,21 @@ export const ProcessTree = ({
   }, []);
   const toggleProcessChildComponent = (process: Process) => {
     process.expanded = !process.expanded;
-    windowingListRef.current?.recomputeRowHeights();
-    windowingListRef.current?.forceUpdate();
+    // process.setHeight(nodeHeight.current?.clientHeight);
+    // setTimeout(() => {
+    //   windowingListRef.current?.recomputeRowHeights();
+    //   windowingListRef.current?.forceUpdate();
+    // }, 10);
   };
 
   const toggleProcessAlerts = (process: Process) => {
     process.alertsExpanded = !process.alertsExpanded;
-    windowingListRef.current?.recomputeRowHeights();
-    windowingListRef.current?.forceUpdate();
+    // batchUpdateRowHeight(process, ref);
+    // process.setHeight(nodeHeight.current?.clientHeight);
+    // setTimeout(() => {
+    //   windowingListRef.current?.recomputeRowHeights();
+    //   windowingListRef.current?.forceUpdate();
+    // }, 10);
   };
 
   const dimensions = useResizeObserver(scrollerRef.current);
@@ -198,6 +205,23 @@ export const ProcessTree = ({
       windowingListRef.current?.forceUpdate();
     }, 10);
   }, [dimensions.width]);
+
+  const rowHeightList = useRef({});
+
+  const itemsRef = useRef({});
+
+  const batchUpdateRowHeight = (index) => {
+    rowHeightList.current[index] = itemsRef.current[index]?.clientHeight;
+    // console.log('----------------------------------', index, '--------------------');
+    // console.log(itemsRef.current[index]?.clientHeight);
+    setTimeout(() => {
+      //   // process.setHeight(ref?.clientHeight);
+      //   // console.log(ref.current?.clientHeight);
+      //   // console.log(process);
+      windowingListRef.current?.recomputeRowHeights();
+      windowingListRef.current?.forceUpdate();
+    }, 100);
+  };
 
   const flattenedListLength = flattenedLeader.length;
 
@@ -217,76 +241,96 @@ export const ProcessTree = ({
                 ref={windowingListRef}
                 height={height}
                 rowCount={flattenedLeader.length}
-                rowHeight={({ index }) =>
-                  flattenedLeader[index].getHeight(
-                    flattenedLeader[index].id === sessionEntityId,
-                    width,
-                    showTimestamp,
+                rowHeight={({ index }) => {
+                  // return flattenedLeader[index].getHeight();
+                  let selfHeight = 29;
+                  if (
+                    flattenedLeader[index].id === sessionEntityId ||
                     index === flattenedListLength - 1
-                  )
-                }
+                  ) {
+                    selfHeight += 16;
+                  }
+
+                  return rowHeightList?.current?.[index] || selfHeight;
+                  // return flattenedLeader[index].getHeight(
+                  //   flattenedLeader[index].id === sessionEntityId,
+                  //   width,
+                  //   showTimestamp,
+                  //   index === flattenedListLength - 1
+                  // );
+                  // // if (rowHeightList[index]) {
+                  //   return rowHeightList[index];
+                  // }
+
+                  // return 29;
+                }}
                 rowRenderer={({ index, style }) => {
                   return (
                     <div style={style}>
-                      {index === 0 ? (
-                        <ProcessTreeNode
-                          isSessionLeader
-                          process={sessionLeader}
-                          onProcessSelected={onProcessSelected}
-                          onToggleChild={toggleProcessChildComponent}
-                          onToggleAlerts={toggleProcessAlerts}
-                          jumpToEntityId={jumpToEntityId}
-                          investigatedAlertId={investigatedAlertId}
-                          selectedProcess={selectedProcess}
-                          // scrollerRef={scrollerRef}
-                          onChangeJumpToEventVisibility={onChangeJumpToEventVisibility}
-                          onShowAlertDetails={onShowAlertDetails}
-                          showTimestamp={showTimestamp}
-                          verboseMode={verboseMode}
-                          searchResults={searchResults}
-                          depth={1}
-                          // loadPreviousButton={
-                          //   hasPreviousPage ? (
-                          //     <ProcessTreeLoadMoreButton
-                          //       text={LOAD_PREVIOUS_TEXT}
-                          //       onClick={fetchPreviousPage}
-                          //       isFetching={isFetching}
-                          //       eventsRemaining={eventsRemaining}
-                          //       forward={false}
-                          //     />
-                          //   ) : null
-                          // }
-                          // loadNextButton={
-                          //   hasNextPage ? (
-                          //     <ProcessTreeLoadMoreButton
-                          //       text={LOAD_NEXT_TEXT}
-                          //       onClick={fetchNextPage}
-                          //       isFetching={isFetching}
-                          //       eventsRemaining={eventsRemaining}
-                          //       forward={true}
-                          //     />
-                          //   ) : null
-                          // }
-                        />
-                      ) : (
-                        <ProcessTreeNode
-                          process={flattenedLeader[index]}
-                          onProcessSelected={onProcessSelected}
-                          onToggleChild={toggleProcessChildComponent}
-                          onToggleAlerts={toggleProcessAlerts}
-                          jumpToEntityId={jumpToEntityId}
-                          investigatedAlertId={investigatedAlertId}
-                          selectedProcess={selectedProcess}
-                          // scrollerRef={scrollerRef}
-                          onChangeJumpToEventVisibility={onChangeJumpToEventVisibility}
-                          onShowAlertDetails={onShowAlertDetails}
-                          showTimestamp={showTimestamp}
-                          verboseMode={verboseMode}
-                          searchResults={searchResults}
-                          isLastResult={index === flattenedListLength - 1}
-                          depth={2}
-                        />
-                      )}
+                      <div ref={(el) => (itemsRef.current[index] = el)}>
+                        {index === 0 ? (
+                          <ProcessTreeNode
+                            isSessionLeader
+                            process={sessionLeader}
+                            onProcessSelected={onProcessSelected}
+                            onToggleChild={toggleProcessChildComponent}
+                            onToggleAlerts={toggleProcessAlerts}
+                            jumpToEntityId={jumpToEntityId}
+                            investigatedAlertId={investigatedAlertId}
+                            selectedProcess={selectedProcess}
+                            // scrollerRef={scrollerRef}
+                            onChangeJumpToEventVisibility={onChangeJumpToEventVisibility}
+                            onShowAlertDetails={onShowAlertDetails}
+                            showTimestamp={showTimestamp}
+                            verboseMode={verboseMode}
+                            searchResults={searchResults}
+                            depth={1}
+                            // loadPreviousButton={
+                            //   hasPreviousPage ? (
+                            //     <ProcessTreeLoadMoreButton
+                            //       text={LOAD_PREVIOUS_TEXT}
+                            //       onClick={fetchPreviousPage}
+                            //       isFetching={isFetching}
+                            //       eventsRemaining={eventsRemaining}
+                            //       forward={false}
+                            //     />
+                            //   ) : null
+                            // }
+                            // loadNextButton={
+                            //   hasNextPage ? (
+                            //     <ProcessTreeLoadMoreButton
+                            //       text={LOAD_NEXT_TEXT}
+                            //       onClick={fetchNextPage}
+                            //       isFetching={isFetching}
+                            //       eventsRemaining={eventsRemaining}
+                            //       forward={true}
+                            //     />
+                            //   ) : null
+                            // }
+                          />
+                        ) : (
+                          <ProcessTreeNode
+                            process={flattenedLeader[index]}
+                            onProcessSelected={onProcessSelected}
+                            onToggleChild={toggleProcessChildComponent}
+                            onToggleAlerts={toggleProcessAlerts}
+                            jumpToEntityId={jumpToEntityId}
+                            investigatedAlertId={investigatedAlertId}
+                            selectedProcess={selectedProcess}
+                            // scrollerRef={scrollerRef}
+                            onChangeJumpToEventVisibility={onChangeJumpToEventVisibility}
+                            onShowAlertDetails={onShowAlertDetails}
+                            showTimestamp={showTimestamp}
+                            verboseMode={verboseMode}
+                            searchResults={searchResults}
+                            isLastResult={index === flattenedListLength - 1}
+                            depth={2}
+                            batchUpdateRowHeight={() => {
+                              batchUpdateRowHeight(index);
+                            }}
+                          />
+                        )}
+                      </div>
                     </div>
                   );
                 }}

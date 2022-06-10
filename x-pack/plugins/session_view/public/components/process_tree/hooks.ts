@@ -62,6 +62,7 @@ export class ProcessImpl implements Process {
     this.searchMatched = null;
     this.expanded = false;
     this.alertsExpanded = false;
+    this.height = 29;
   }
 
   addEvent(newEvent: ProcessEvent) {
@@ -285,37 +286,44 @@ export class ProcessImpl implements Process {
     return false;
   }
 
-  getHeight(isSessionLeader: boolean = false, width: number, showTimestamp: boolean, isLastResult) {
-    const rowWidth = width - 15 - 8;
-    const iconWidth = 16 + 8;
-    const timeWidth = showTimestamp ? 260 : 0;
-    const workDirWidth = (this.getDetails()?.process?.working_directory?.length || 0) * 8;
-    const commandWidth = (this.getDetails()?.process?.args?.[0]?.length || 0) * 8;
-    const argsWidth = (this.getDetails()?.process?.args?.slice(1)?.join(' ').length || 0) * 8;
-    const textSpacingWidth = 12;
-    const totalWidth =
-      iconWidth + timeWidth + workDirWidth + commandWidth + argsWidth + textSpacingWidth;
+  setHeight(height) {
+    this.height = height;
+  }
 
-    const numberOfRows = rowWidth > totalWidth ? 1 : Math.ceil(totalWidth / rowWidth);
+  // getHeight(isSessionLeader: boolean = false, width: number, showTimestamp: boolean, isLastResult) {
+  getHeight() {
+    // const rowWidth = width - 15 - 8;
+    // const iconWidth = 16 + 8;
+    // const timeWidth = showTimestamp ? 260 : 0;
+    // const workDirWidth = (this.getDetails()?.process?.working_directory?.length || 0) * 8;
+    // const commandWidth = (this.getDetails()?.process?.args?.[0]?.length || 0) * 8;
+    // const argsWidth = (this.getDetails()?.process?.args?.slice(1)?.join(' ').length || 0) * 8;
+    // const textSpacingWidth = 12;
+    // const totalWidth =
+    //   iconWidth + timeWidth + workDirWidth + commandWidth + argsWidth + textSpacingWidth;
 
-    const alertsDetailHeight = this.alertsExpanded
-      ? (this.getAlerts().length || 0) * PROCESS_NODE_ALERT_DETAIL_HEIGHT +
-        PROCESS_NODE_ALERT_DETAIL_PADDING
-      : 0;
-    const PADDING_HEIGHT = 8;
-    let selfHeight = numberOfRows * PROCESS_NODE_BASE_HEIGHT + PADDING_HEIGHT + alertsDetailHeight;
+    // const numberOfRows = rowWidth > totalWidth ? 1 : Math.ceil(totalWidth / rowWidth);
 
-    if (this.expanded && !isSessionLeader) {
-      return this.children.reduce((cumulativeHeight, child) => {
-        return cumulativeHeight + child.getHeight(false, width - 8, showTimestamp);
-      }, selfHeight);
-    }
+    // const alertsDetailHeight = this.alertsExpanded
+    //   ? (this.getAlerts().length || 0) * PROCESS_NODE_ALERT_DETAIL_HEIGHT +
+    //     PROCESS_NODE_ALERT_DETAIL_PADDING
+    //   : 0;
+    // const PADDING_HEIGHT = 8;
+    // let selfHeight = numberOfRows * PROCESS_NODE_BASE_HEIGHT + PADDING_HEIGHT + alertsDetailHeight;
 
-    if (isSessionLeader || isLastResult) {
-      selfHeight += 16;
-    }
+    // if (this.expanded && !isSessionLeader) {
+    //   return this.children.reduce((cumulativeHeight, child) => {
+    //     return cumulativeHeight + child.getHeight(false, width - 8, showTimestamp);
+    //   }, selfHeight);
+    // }
 
-    return selfHeight;
+    // if (isSessionLeader || isLastResult) {
+    //   selfHeight += 16;
+    // }
+
+    // return selfHeight;
+
+    return this.height;
   }
 }
 
