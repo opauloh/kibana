@@ -53,8 +53,6 @@ export interface ProcessDeps {
   onShowAlertDetails: (alertUuid: string) => void;
   loadNextButton?: ReactElement | null;
   loadPreviousButton?: ReactElement | null;
-  onToggleChild: (process: Process) => void;
-  onToggleAlerts?: (process: Process) => void;
 }
 
 /**
@@ -77,16 +75,19 @@ export function ProcessTreeNode({
   onShowAlertDetails,
   loadPreviousButton,
   loadNextButton,
-  // onToggleChild,
-  // onToggleAlerts,
   batchUpdateRowHeight,
-}: // nodeRef,
+}: // onToggleChild,
+// onToggleAlerts,
+// batchUpdateRowHeight,
+// nodeRef,
 // parentProcess,
 ProcessDeps) {
   const textRef = useRef<HTMLSpanElement>(null);
 
-  const [childrenExpanded, setChildrenExpanded] = useState(process.autoExpand);
-  const [alertsExpanded, setAlertsExpanded] = useState(false);
+  const [childrenExpanded, setChildrenExpanded] = useState(
+    !isSessionLeader && (process.autoExpand || process.expanded)
+  );
+  const [alertsExpanded, setAlertsExpanded] = useState(process.alertsExpanded);
   // const { searchMatched, expanded, alertsExpanded } = process;
   const { searchMatched } = process;
 
@@ -102,8 +103,10 @@ ProcessDeps) {
   }, [selectedProcess, process, childrenExpanded]);
 
   useEffect(() => {
-    setChildrenExpanded(process.autoExpand);
-  }, [process.autoExpand]);
+    // if (process.autoExpand) {
+    setChildrenExpanded(process.expanded || process.autoExpand);
+    // }
+  }, []);
 
   const alerts = process.getAlerts();
   const hasAlerts = useMemo(() => !!alerts.length, [alerts]);
@@ -162,11 +165,14 @@ ProcessDeps) {
   }, [searchMatched, styles.searchHighlight]);
 
   const onChildrenToggle = useCallback(() => {
+    process.expanded = !childrenExpanded;
     setChildrenExpanded(!childrenExpanded);
+    batchUpdateRowHeight?.();
   }, [childrenExpanded]);
 
   const onAlertsToggle = useCallback(() => {
     setAlertsExpanded(!alertsExpanded);
+    batchUpdateRowHeight?.();
   }, [alertsExpanded]);
 
   const onProcessClicked = useCallback(
@@ -245,17 +251,17 @@ ProcessDeps) {
 
   // const nodeHeight = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // process.setHeight(nodeHeight.current?.clientHeight);
-    // console.log(nodeHeight.current?.clientHeight);
-    // setTimeout(() => {
-    // const ref = nodeRef ? nodeRef : nodeHeight;
-    // process.setHeight(ref.current?.clientHeight);
-    // console.log(ref.current?.clientHeight);
-    batchUpdateRowHeight?.();
-    // console.log('LOL');
-    // }, 100);
-  }, [childrenExpanded, alertsExpanded]);
+  // useEffect(() => {
+  // process.setHeight(nodeHeight.current?.clientHeight);
+  // console.log(nodeHeight.current?.clientHeight);
+  // setTimeout(() => {
+  // const ref = nodeRef ? nodeRef : nodeHeight;
+  // process.setHeight(ref.current?.clientHeight);
+  // console.log(ref.current?.clientHeight);
+  // batchUpdateRowHeight?.();
+  // console.log('LOL');
+  // }, 100);
+  // }, [childrenExpanded, alertsExpanded]);
 
   // const batchUpdateRowHeights = () => {
   //   batchUpdateRowHeight(process, nodeRef);

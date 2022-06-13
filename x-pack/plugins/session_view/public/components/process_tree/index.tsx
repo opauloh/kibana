@@ -104,6 +104,8 @@ export const ProcessTree = ({
 
   const flattenedLeader = getFlattenedLeader();
 
+  // console.log({ flattenedLeader });
+
   const eventsRemaining = useMemo(() => {
     const total = data?.[0]?.total || 0;
     const loadedSoFar = data.reduce((prev, current) => {
@@ -147,83 +149,85 @@ export const ProcessTree = ({
     },
   });
 
-  useEffect(() => {
-    if (jumpToEntityId) {
-      const process = processMap[jumpToEntityId];
-      const hasDetails = !!process?.getDetails();
+  // useEffect(() => {
+  //   if (jumpToEntityId) {
+  //     const process = processMap[jumpToEntityId];
+  //     const hasDetails = !!process?.getDetails();
 
-      if (!selectedProcess && hasDetails) {
-        onProcessSelected(process);
-        windowingListRef.current?.scrollToRow(
-          flattenedLeader.findIndex((p) => p.id === jumpToEntityId)
-        );
-      }
-    } else if (!selectedProcess) {
-      onProcessSelected(sessionLeader);
-    }
-  }, [
-    jumpToEntityId,
-    processMap,
-    onProcessSelected,
-    selectedProcess,
-    sessionLeader,
-    flattenedLeader,
-  ]);
+  //     if (!selectedProcess && hasDetails) {
+  //       onProcessSelected(process);
+  //       windowingListRef.current?.scrollToRow(
+  //         flattenedLeader.findIndex((p) => p.id === jumpToEntityId)
+  //       );
+  //     }
+  //   } else if (!selectedProcess) {
+  //     onProcessSelected(sessionLeader);
+  //   }
+  // }, [
+  //   jumpToEntityId,
+  //   processMap,
+  //   onProcessSelected,
+  //   selectedProcess,
+  //   sessionLeader,
+  //   flattenedLeader,
+  // ]);
 
-  useEffect(() => {
-    window.addEventListener('resize', () => {
-      setTimeout(() => {
-        windowingListRef.current?.recomputeRowHeights();
-        windowingListRef.current?.forceUpdate();
-      }, 10);
-    });
-  }, []);
-  const toggleProcessChildComponent = (process: Process) => {
-    process.expanded = !process.expanded;
-    // process.setHeight(nodeHeight.current?.clientHeight);
-    // setTimeout(() => {
-    //   windowingListRef.current?.recomputeRowHeights();
-    //   windowingListRef.current?.forceUpdate();
-    // }, 10);
-  };
+  // useEffect(() => {
+  //   window.addEventListener('resize', () => {
+  //     setTimeout(() => {
+  //       windowingListRef.current?.recomputeRowHeights();
+  //       windowingListRef.current?.forceUpdate();
+  //     }, 10);
+  //   });
+  // }, []);
+  // const toggleProcessChildComponent = (process: Process) => {
+  //   process.expanded = !process.expanded;
+  // process.setHeight(nodeHeight.current?.clientHeight);
+  // setTimeout(() => {
+  //   windowingListRef.current?.recomputeRowHeights();
+  //   windowingListRef.current?.forceUpdate();
+  // }, 10);
+  // };
 
-  const toggleProcessAlerts = (process: Process) => {
-    process.alertsExpanded = !process.alertsExpanded;
-    // batchUpdateRowHeight(process, ref);
-    // process.setHeight(nodeHeight.current?.clientHeight);
-    // setTimeout(() => {
-    //   windowingListRef.current?.recomputeRowHeights();
-    //   windowingListRef.current?.forceUpdate();
-    // }, 10);
-  };
+  // const toggleProcessAlerts = (process: Process) => {
+  //   process.alertsExpanded = !process.alertsExpanded;
+  // batchUpdateRowHeight(process, ref);
+  // process.setHeight(nodeHeight.current?.clientHeight);
+  // setTimeout(() => {
+  //   windowingListRef.current?.recomputeRowHeights();
+  //   windowingListRef.current?.forceUpdate();
+  // }, 10);
+  // };
 
-  const dimensions = useResizeObserver(scrollerRef.current);
+  // const dimensions = useResizeObserver(scrollerRef.current);
 
-  useEffect(() => {
-    setTimeout(() => {
-      windowingListRef.current?.recomputeRowHeights();
-      windowingListRef.current?.forceUpdate();
-    }, 10);
-  }, [dimensions.width]);
+  // useEffect(() => {
+  //   setTimeout(() => {
+  //     windowingListRef.current?.recomputeRowHeights();
+  //     windowingListRef.current?.forceUpdate();
+  //   }, 10);
+  // }, [dimensions.width]);
 
   const rowHeightList = useRef({});
 
   const itemsRef = useRef({});
 
   const batchUpdateRowHeight = (index) => {
-    rowHeightList.current[index] = itemsRef.current[index]?.clientHeight;
     // console.log('----------------------------------', index, '--------------------');
     // console.log(itemsRef.current[index]?.clientHeight);
     setTimeout(() => {
+      rowHeightList.current[index] = itemsRef.current[index]?.clientHeight;
       //   // process.setHeight(ref?.clientHeight);
       //   // console.log(ref.current?.clientHeight);
       //   // console.log(process);
       windowingListRef.current?.recomputeRowHeights();
       windowingListRef.current?.forceUpdate();
-    }, 100);
+    }, 10);
   };
 
   const flattenedListLength = flattenedLeader.length;
+
+  // console.log({ flattenedListLength });
 
   return (
     <>
@@ -265,16 +269,17 @@ export const ProcessTree = ({
                   // return 29;
                 }}
                 rowRenderer={({ index, style }) => {
+                  // console.log(index);
                   return (
-                    <div style={style}>
+                    <div key={index} style={style}>
                       <div ref={(el) => (itemsRef.current[index] = el)}>
                         {index === 0 ? (
                           <ProcessTreeNode
                             isSessionLeader
-                            process={sessionLeader}
+                            process={flattenedLeader[0]}
                             onProcessSelected={onProcessSelected}
-                            onToggleChild={toggleProcessChildComponent}
-                            onToggleAlerts={toggleProcessAlerts}
+                            // onToggleChild={toggleProcessChildComponent}
+                            // onToggleAlerts={toggleProcessAlerts}
                             jumpToEntityId={jumpToEntityId}
                             investigatedAlertId={investigatedAlertId}
                             selectedProcess={selectedProcess}
@@ -312,8 +317,6 @@ export const ProcessTree = ({
                           <ProcessTreeNode
                             process={flattenedLeader[index]}
                             onProcessSelected={onProcessSelected}
-                            onToggleChild={toggleProcessChildComponent}
-                            onToggleAlerts={toggleProcessAlerts}
                             jumpToEntityId={jumpToEntityId}
                             investigatedAlertId={investigatedAlertId}
                             selectedProcess={selectedProcess}
