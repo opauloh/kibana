@@ -228,6 +228,23 @@ export const ProcessTree = ({
   const flattenedListLength = flattenedLeader.length;
 
   // console.log({ flattenedListLength });
+  const getNodesToRender = useCallback((node: Process, nodesToRender: Process[], depth = 0) => {
+    const children = node.getChildren(verboseMode);
+    const childrenExpanded = true;
+
+    if (node !== sessionLeader) {
+      node.depth = depth;
+      nodesToRender.push(node);
+    }
+
+    if (childrenExpanded && children.length > 0) {
+      children.forEach((child) => {
+        getNodesToRender(child, nodesToRender, depth + 1);
+      });
+    }
+
+    return nodesToRender;
+  }, []);
 
   return (
     <>
