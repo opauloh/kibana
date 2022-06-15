@@ -105,6 +105,7 @@ ProcessDeps) {
   useEffect(() => {
     // if (process.autoExpand) {
     setChildrenExpanded(process.expanded || process.autoExpand);
+    batchUpdateRowHeight?.();
     // }
   }, []);
 
