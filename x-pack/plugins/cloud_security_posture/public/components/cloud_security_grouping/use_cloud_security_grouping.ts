@@ -72,10 +72,20 @@ export const useCloudSecurityGrouping = ({
     groupingId: groupingLocalStorageKey,
     maxGroupingLevels: MAX_GROUPING_LEVELS,
     title: groupingTitle,
-    onGroupChange: () => {
+    onGroupChange: (param) => {
       setActivePageIndex(0);
+      setUrlQuery({
+        groupBy: [param.groupByField],
+      });
     },
   });
+
+  useEffect(() => {
+    if (urlQuery.groupBy) {
+      grouping.setSelectedGroups(urlQuery.groupBy);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const selectedGroup = grouping.selectedGroups[0];
 
