@@ -131,18 +131,12 @@ export const useLatestFindingsGrouping = ({
   groupingLevel = 0,
   groupFilters = [],
   selectedGroup,
-  onGroupChange,
 }: {
   groupPanelRenderer?: GroupPanelRenderer<FindingsGroupingAggregation>;
   groupStatsRenderer?: GroupStatsRenderer<FindingsGroupingAggregation>;
   groupingLevel?: number;
   groupFilters?: Filter[];
   selectedGroup?: string;
-  onGroupChange?: (param: {
-    groupByField: string;
-    tableId: string;
-    selectedGroups: string[];
-  }) => void;
 }) => {
   const dataView = useLatestFindingsDataView(LATEST_FINDINGS_INDEX_PATTERN).data!;
 

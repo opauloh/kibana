@@ -67,8 +67,11 @@ export const useCloudSecurityGrouping = ({
     groupingId: GROUPING_ID,
     maxGroupingLevels: MAX_GROUPING_LEVELS,
     title: groupingTitle,
-    onGroupChange: () => {
+    onGroupChange: (param) => {
       setActivePageIndex(0);
+      setUrlQuery({
+        groupBy: param.selectedGroups,
+      });
     },
   });
 
@@ -80,6 +83,20 @@ export const useCloudSecurityGrouping = ({
   useEffect(() => {
     setActivePageIndex(0);
   }, [urlQuery.filters, urlQuery.query]);
+
+  useEffect(() => {
+    if (urlQuery.groupBy) {
+      grouping.setSelectedGroups(urlQuery.groupBy);
+    }
+
+    // console.log(grouping.selectedGroups);
+    // if (grouping.selectedGroups) {
+    //   setUrlQuery({
+    //     groupBy: grouping.selectedGroups,
+    //   });
+    // }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // This is recommended by the grouping component to cover an edge case
   // where the selectedGroup has multiple values
