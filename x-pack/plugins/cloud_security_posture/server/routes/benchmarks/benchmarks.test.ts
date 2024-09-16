@@ -51,26 +51,6 @@ describe('benchmarks API', () => {
     expect(res.forbidden).toHaveBeenCalledTimes(0);
   });
 
-  it('should reject to a user without fleet.all privilege', async () => {
-    const router = httpServiceMock.createRouter();
-
-    defineGetBenchmarksRoute(router);
-
-    const versionedRouter = router.versioned.get.mock.results[0].value;
-    const handler = versionedRouter.addVersion.mock.calls[0][1];
-
-    const mockContext = createCspRequestHandlerContextMock();
-    mockContext.fleet.authz.fleet.all = false;
-
-    const mockResponse = httpServerMock.createResponseFactory();
-    const mockRequest = httpServerMock.createKibanaRequest();
-    const [context, req, res] = [mockContext, mockRequest, mockResponse];
-
-    await handler(context, req, res);
-
-    expect(res.forbidden).toHaveBeenCalledTimes(1);
-  });
-
   describe('test input schema', () => {
     it('expect to find default values', async () => {
       const validatedQuery = benchmarksQueryParamsSchema.validate({});

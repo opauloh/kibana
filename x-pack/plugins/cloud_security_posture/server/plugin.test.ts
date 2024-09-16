@@ -24,7 +24,6 @@ import { createPackagePolicyMock, deletePackagePolicyMock } from '@kbn/fleet-plu
 import { dataPluginMock } from '@kbn/data-plugin/server/mocks';
 import { CspPlugin } from './plugin';
 import { CspServerPluginStartDeps } from './types';
-import { createFleetAuthzMock } from '@kbn/fleet-plugin/common/mocks';
 import {
   Installation,
   ListResult,
@@ -58,9 +57,6 @@ const mockRouteContext = {
 
 const createMockFleetStartContract = (): DeeplyMockedKeys<FleetStartContract> => {
   return {
-    authz: {
-      fromRequest: jest.fn(async (_) => createFleetAuthzMock()),
-    },
     fleetSetupCompleted: jest.fn().mockResolvedValue(undefined),
     // @ts-expect-error 2322
     agentService: createMockAgentService(),
