@@ -8,7 +8,6 @@
 import { i18n } from '@kbn/i18n';
 import { CSPM_POLICY_TEMPLATE, KSPM_POLICY_TEMPLATE } from '@kbn/cloud-security-posture-common';
 import type { BenchmarksCisId } from '@kbn/cloud-security-posture-common';
-import { useCspIntegrationLink } from '../navigation/use_csp_integration_link';
 
 type BenchmarkDynamicNames =
   | {
@@ -39,8 +38,8 @@ type BenchmarkDynamicNames =
 
 export type BenchmarkDynamicValues = BenchmarkDynamicNames & {
   resourceCountLabel: string;
-  integrationLink: string;
   learnMoreLink: string;
+  policyTemplate: 'cspm' | 'kspm';
 };
 
 export type GetBenchmarkDynamicValues = (
@@ -49,9 +48,6 @@ export type GetBenchmarkDynamicValues = (
 ) => BenchmarkDynamicValues;
 
 export const useBenchmarkDynamicValues = () => {
-  const cspmIntegrationLink = useCspIntegrationLink(CSPM_POLICY_TEMPLATE) || '';
-  const kspmIntegrationLink = useCspIntegrationLink(KSPM_POLICY_TEMPLATE) || '';
-
   /**
    * Retrieves dynamic benchmark values based on the provided benchmark ID and resource count.
    *
@@ -68,8 +64,8 @@ export const useBenchmarkDynamicValues = () => {
    * //   integrationName: 'AWS',
    * //   resourceName: 'Accounts',
    * //   resourceCountLabel: 'accounts',
-   * //   integrationLink: 'cspm-integration-link',
-   * //   learnMoreLink: 'https://ela.st/cspm-get-started'
+   * //   learnMoreLink: 'https://ela.st/cspm-get-started',
+   * //   policyTemplate: 'cspm'
    * // }
    */
   const getBenchmarkDynamicValues: GetBenchmarkDynamicValues = (
@@ -86,8 +82,8 @@ export const useBenchmarkDynamicValues = () => {
             defaultMessage: '{resourceCount, plural, one {account} other {accounts}}',
             values: { resourceCount: resourceCount || 0 },
           }),
-          integrationLink: cspmIntegrationLink,
           learnMoreLink: 'https://ela.st/cspm-get-started',
+          policyTemplate: CSPM_POLICY_TEMPLATE,
         };
       case 'cis_gcp':
         return {
@@ -98,8 +94,8 @@ export const useBenchmarkDynamicValues = () => {
             defaultMessage: '{resourceCount, plural, one {project} other {projects}}',
             values: { resourceCount: resourceCount || 0 },
           }),
-          integrationLink: cspmIntegrationLink,
           learnMoreLink: 'https://ela.st/cspm-get-started',
+          policyTemplate: CSPM_POLICY_TEMPLATE,
         };
       case 'cis_azure':
         return {
@@ -113,8 +109,8 @@ export const useBenchmarkDynamicValues = () => {
               values: { resourceCount: resourceCount || 0 },
             }
           ),
-          integrationLink: cspmIntegrationLink,
           learnMoreLink: 'https://ela.st/cspm-get-started',
+          policyTemplate: CSPM_POLICY_TEMPLATE,
         };
       case 'cis_k8s':
         return {
@@ -125,8 +121,8 @@ export const useBenchmarkDynamicValues = () => {
             defaultMessage: '{resourceCount, plural, one {cluster} other {clusters}}',
             values: { resourceCount: resourceCount || 0 },
           }),
-          integrationLink: kspmIntegrationLink,
           learnMoreLink: 'https://ela.st/kspm-get-started',
+          policyTemplate: KSPM_POLICY_TEMPLATE,
         };
       case 'cis_eks':
         return {
@@ -137,8 +133,8 @@ export const useBenchmarkDynamicValues = () => {
             defaultMessage: '{resourceCount, plural, one {cluster} other {clusters}}',
             values: { resourceCount: resourceCount || 0 },
           }),
-          integrationLink: kspmIntegrationLink,
           learnMoreLink: 'https://ela.st/kspm-get-started',
+          policyTemplate: KSPM_POLICY_TEMPLATE,
         };
       default:
         return {} as BenchmarkDynamicValues;

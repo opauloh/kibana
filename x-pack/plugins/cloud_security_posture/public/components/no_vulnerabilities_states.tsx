@@ -17,6 +17,7 @@ import {
   EuiFlexItem,
   EuiImage,
   EuiLink,
+  EuiToolTip,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
@@ -61,11 +62,15 @@ const ScanningVulnerabilitiesEmptyPrompt = () => (
   />
 );
 
-const CnvmIntegrationNotInstalledEmptyPrompt = ({
-  vulnMgmtIntegrationLink,
-}: {
-  vulnMgmtIntegrationLink?: string;
-}) => {
+const CnvmIntegrationNotInstalledEmptyPrompt = () => {
+  const vulnMgmtIntegrationLink = useCspIntegrationLink(VULN_MGMT_POLICY_TEMPLATE);
+
+  const withErrorTooltip = (component: JSX.Element) => {
+    if (!vulnMgmtIntegrationLink?.isError) return component;
+
+    return <EuiToolTip content={vulnMgmtIntegrationLink?.error}>{component}</EuiToolTip>;
+  };
+
   return (
     <EuiEmptyPrompt
       data-test-subj={NO_VULNERABILITIES_STATUS_TEST_SUBJ.NOT_INSTALLED}
@@ -95,17 +100,20 @@ const CnvmIntegrationNotInstalledEmptyPrompt = ({
       actions={
         <EuiFlexGroup>
           <EuiFlexItem grow={false}>
-            <EuiButton
-              color="primary"
-              fill
-              href={vulnMgmtIntegrationLink}
-              data-test-subj={CNVM_NOT_INSTALLED_ACTION_SUBJ}
-            >
-              <FormattedMessage
-                id="xpack.csp.cloudPosturePage.vulnerabilitiesInstalledEmptyPrompt.addVulMngtIntegrationButtonTitle"
-                defaultMessage="Install Cloud Native Vulnerability Management"
-              />
-            </EuiButton>
+            {withErrorTooltip(
+              <EuiButton
+                color="primary"
+                fill
+                href={vulnMgmtIntegrationLink?.link}
+                data-test-subj={CNVM_NOT_INSTALLED_ACTION_SUBJ}
+                isDisabled={!vulnMgmtIntegrationLink || vulnMgmtIntegrationLink.isError}
+              >
+                <FormattedMessage
+                  id="xpack.csp.cloudPosturePage.vulnerabilitiesInstalledEmptyPrompt.addVulMngtIntegrationButtonTitle"
+                  defaultMessage="Install Cloud Native Vulnerability Management"
+                />
+              </EuiButton>
+            )}
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
             <EuiButtonEmpty color="primary" href={'https://ela.st/cnvm'} target="_blank">
@@ -221,7 +229,7 @@ const AgentNotDeployedEmptyPrompt = ({ postureType }: { postureType: PostureType
         </p>
       }
       actions={[
-        <EuiButton fill href={integrationPoliciesLink} isDisabled={!integrationPoliciesLink}>
+        <EuiButton fill href={integrationPoliciesLink?.link} isDisabled={!integrationPoliciesLink}>
           <FormattedMessage
             id="xpack.csp.noVulnerabilitiesStates.noAgentsDeployed.noAgentsDeployedButtonTitle"
             defaultMessage="Install Agent"
@@ -240,7 +248,6 @@ export const NoVulnerabilitiesStates = () => {
   const getSetupStatus = useCspSetupStatusApi({
     refetchInterval: REFETCH_INTERVAL_MS,
   });
-  const vulnMgmtIntegrationLink = useCspIntegrationLink(VULN_MGMT_POLICY_TEMPLATE);
 
   const status = getSetupStatus.data?.vuln_mgmt?.status;
   const indicesStatus = getSetupStatus.data?.indicesDetails;
@@ -255,10 +262,7 @@ export const NoVulnerabilitiesStates = () => {
     if (status === 'indexing' || status === 'waiting_for_results')
       return <ScanningVulnerabilitiesEmptyPrompt />; // integration installed, but no agents added// agent added, index timeout has passed
     if (status === 'index-timeout') return <CnvmIndexTimeout />;
-    if (status === 'not-installed')
-      return (
-        <CnvmIntegrationNotInstalledEmptyPrompt vulnMgmtIntegrationLink={vulnMgmtIntegrationLink} />
-      );
+    if (status === 'not-installed') return <CnvmIntegrationNotInstalledEmptyPrompt />;
     if (status === 'not-deployed')
       return <AgentNotDeployedEmptyPrompt postureType={VULN_MGMT_POLICY_TEMPLATE} />;
     if (status === 'unprivileged')

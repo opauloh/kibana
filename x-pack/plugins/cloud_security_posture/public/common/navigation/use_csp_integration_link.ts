@@ -10,13 +10,20 @@ import type { CloudSecurityPolicyTemplate } from '../../../common/types_old';
 import { useCisKubernetesIntegration } from '../api/use_cis_kubernetes_integration';
 import { useKibana } from '../hooks/use_kibana';
 
-export const useCspIntegrationLink = (
-  policyTemplate: CloudSecurityPolicyTemplate
-): string | undefined => {
+export const useCspIntegrationLink = (policyTemplate: CloudSecurityPolicyTemplate) => {
   const { http } = useKibana().services;
   const cisIntegration = useCisKubernetesIntegration();
 
-  if (!cisIntegration.isSuccess) return;
+  if (cisIntegration.isError) {
+    return {
+      isError: true,
+      error: String(cisIntegration.error),
+    };
+  }
+
+  if (!cisIntegration.data) {
+    return;
+  }
 
   const path = pagePathGetters
     .add_integration_to_policy({
@@ -28,5 +35,8 @@ export const useCspIntegrationLink = (
     })
     .join('');
 
-  return http.basePath.prepend(path);
+  return {
+    link: http.basePath.prepend(path),
+    isError: false,
+  };
 };

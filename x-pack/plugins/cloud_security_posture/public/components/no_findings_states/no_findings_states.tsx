@@ -16,6 +16,7 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiImage,
+  EuiToolTip,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
@@ -42,6 +43,12 @@ const NotDeployed = ({ postureType }: { postureType: PostureTypes }) => {
     postureType,
   });
 
+  const withErrorTooltip = (component: JSX.Element) => {
+    if (!integrationPoliciesLink?.isError) return component;
+
+    return <EuiToolTip content={integrationPoliciesLink?.error}>{component}</EuiToolTip>;
+  };
+
   return (
     <EuiEmptyPrompt
       data-test-subj={NO_FINDINGS_STATUS_TEST_SUBJ.NO_AGENTS_DEPLOYED}
@@ -64,12 +71,18 @@ const NotDeployed = ({ postureType }: { postureType: PostureTypes }) => {
         </p>
       }
       actions={[
-        <EuiButton fill href={integrationPoliciesLink} isDisabled={!integrationPoliciesLink}>
-          <FormattedMessage
-            id="xpack.csp.noFindingsStates.noAgentsDeployed.noAgentsDeployedButtonTitle"
-            defaultMessage="Install Agent"
-          />
-        </EuiButton>,
+        withErrorTooltip(
+          <EuiButton
+            fill
+            href={integrationPoliciesLink?.link}
+            isDisabled={!integrationPoliciesLink || integrationPoliciesLink.isError}
+          >
+            <FormattedMessage
+              id="xpack.csp.noFindingsStates.noAgentsDeployed.noAgentsDeployedButtonTitle"
+              defaultMessage="Install Agent"
+            />
+          </EuiButton>
+        ),
       ]}
     />
   );

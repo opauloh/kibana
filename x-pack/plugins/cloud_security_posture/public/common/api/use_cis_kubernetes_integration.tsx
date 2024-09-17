@@ -6,12 +6,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  epmRouteService,
-  type GetInfoResponse,
-  type DefaultPackagesInstallationError,
-  API_VERSIONS,
-} from '@kbn/fleet-plugin/common';
+import { epmRouteService, type GetInfoResponse, API_VERSIONS } from '@kbn/fleet-plugin/common';
 import { CLOUD_SECURITY_POSTURE_PACKAGE_NAME } from '../../../common/constants';
 import { useKibana } from '../hooks/use_kibana';
 
@@ -21,9 +16,20 @@ import { useKibana } from '../hooks/use_kibana';
 export const useCisKubernetesIntegration = () => {
   const { http } = useKibana().services;
 
-  return useQuery<GetInfoResponse, DefaultPackagesInstallationError>(['integrations'], () =>
-    http.get<GetInfoResponse>(epmRouteService.getInfoPath(CLOUD_SECURITY_POSTURE_PACKAGE_NAME), {
-      version: API_VERSIONS.public.v1,
-    })
+  return useQuery<GetInfoResponse, Error>(
+    ['integrations'],
+    () =>
+      http.get<GetInfoResponse>(epmRouteService.getInfoPath(CLOUD_SECURITY_POSTURE_PACKAGE_NAME), {
+        version: API_VERSIONS.public.v1,
+      }),
+    {
+      retry: (failureCount, error) => {
+        // Disabling retries on forbidden and not found requests
+        if (String(error) === 'Error: Forbidden' || String(error) === 'Error: Not Found') {
+          return false;
+        }
+        return failureCount < 3;
+      },
+    }
   );
 };

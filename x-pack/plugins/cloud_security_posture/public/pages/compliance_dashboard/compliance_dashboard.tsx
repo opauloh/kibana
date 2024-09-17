@@ -18,7 +18,6 @@ import type { BaseCspSetupStatus } from '@kbn/cloud-security-posture-common';
 import { useCspSetupStatusApi } from '@kbn/cloud-security-posture/src/hooks/use_csp_setup_status_api';
 import { encodeQuery } from '@kbn/cloud-security-posture';
 import { NO_FINDINGS_STATUS_TEST_SUBJ } from '../../components/test_subjects';
-import { useCspIntegrationLink } from '../../common/navigation/use_csp_integration_link';
 import type { PosturePolicyTemplate, ComplianceDashboardDataV2 } from '../../../common/types_old';
 import { CloudPosturePageTitle } from '../../components/cloud_posture_page_title';
 import {
@@ -102,10 +101,7 @@ const noDataOptions: Record<
   },
 };
 
-const getNotInstalledConfig = (
-  policyTemplate: PosturePolicyTemplate,
-  actionHref: CspNoDataPageProps['actionHref']
-) => {
+const getNotInstalledConfig = (policyTemplate: PosturePolicyTemplate) => {
   const policyTemplateNoDataConfig = noDataOptions[policyTemplate];
 
   return {
@@ -113,7 +109,6 @@ const getNotInstalledConfig = (
       defaultMessage: 'Install Integration to get started',
     }),
     docsLink: policyTemplateNoDataConfig.docsLink,
-    actionHref,
     actionTitle: policyTemplateNoDataConfig.actionTitle,
     actionDescription: policyTemplateNoDataConfig.actionDescription,
     testId: policyTemplateNoDataConfig.testId,
@@ -126,18 +121,18 @@ const IntegrationPostureDashboard = ({
   complianceData,
   notInstalledConfig,
   isIntegrationInstalled,
-  dashboardType,
+  policyTemplate,
 }: {
   complianceData: ComplianceDashboardDataV2 | undefined;
   notInstalledConfig: CspNoDataPageProps;
   isIntegrationInstalled?: boolean;
-  dashboardType: PosturePolicyTemplate;
+  policyTemplate: PosturePolicyTemplate;
 }) => {
   const noFindings = !complianceData || complianceData.stats.totalFindings === 0;
 
   // integration is not installed, and there are no findings for this integration
   if (noFindings && !isIntegrationInstalled) {
-    return <CspNoDataPage {...notInstalledConfig} />;
+    return <CspNoDataPage policyTemplate={policyTemplate} {...notInstalledConfig} />;
   }
 
   // integration is installed, but there are no findings for this integration
@@ -179,9 +174,9 @@ const IntegrationPostureDashboard = ({
   // there are findings, displays dashboard even if integration is not installed
   return (
     <>
-      <SummarySection complianceData={complianceData!} dashboardType={dashboardType} />
+      <SummarySection complianceData={complianceData!} dashboardType={policyTemplate} />
       <EuiSpacer />
-      <BenchmarksSection complianceData={complianceData!} dashboardType={dashboardType} />
+      <BenchmarksSection complianceData={complianceData!} dashboardType={policyTemplate} />
       <EuiSpacer />
     </>
   );
@@ -261,22 +256,17 @@ const TabContent = ({
   const setupStatus = getSetupStatus?.[selectedPostureTypeTab]?.status;
   const isStatusManagedInDashboard = setupStatus === 'indexed' || setupStatus === 'not-installed';
   const shouldRenderNoFindings = !isCloudSecurityPostureInstalled || !isStatusManagedInDashboard;
-  const cspmIntegrationLink = useCspIntegrationLink(CSPM_POLICY_TEMPLATE);
-  const kspmIntegrationLink = useCspIntegrationLink(KSPM_POLICY_TEMPLATE);
-  let integrationLink;
   let dataTestSubj;
   let policyTemplate: PosturePolicyTemplate;
   let getDashboardData: UseQueryResult<ComplianceDashboardDataV2>;
 
   switch (selectedPostureTypeTab) {
     case POSTURE_TYPE_CSPM:
-      integrationLink = cspmIntegrationLink;
       dataTestSubj = CLOUD_DASHBOARD_CONTAINER;
       policyTemplate = CSPM_POLICY_TEMPLATE;
       getDashboardData = getCspmDashboardData;
       break;
     case POSTURE_TYPE_KSPM:
-      integrationLink = kspmIntegrationLink;
       dataTestSubj = KUBERNETES_DASHBOARD_CONTAINER;
       policyTemplate = KSPM_POLICY_TEMPLATE;
       getDashboardData = getKspmDashboardData;
@@ -293,18 +283,18 @@ const TabContent = ({
         <Routes>
           <Route path={cloudPosturePages.cspm_dashboard.path}>
             <IntegrationPostureDashboard
-              dashboardType={policyTemplate}
+              policyTemplate={policyTemplate}
               complianceData={getDashboardData.data}
-              notInstalledConfig={getNotInstalledConfig(policyTemplate, integrationLink)}
+              notInstalledConfig={getNotInstalledConfig(policyTemplate)}
               isIntegrationInstalled={setupStatus !== 'not-installed'}
             />
           </Route>
 
           <Route path={cloudPosturePages.kspm_dashboard.path}>
             <IntegrationPostureDashboard
-              dashboardType={policyTemplate}
+              policyTemplate={policyTemplate}
               complianceData={getDashboardData.data}
-              notInstalledConfig={getNotInstalledConfig(policyTemplate, integrationLink)}
+              notInstalledConfig={getNotInstalledConfig(policyTemplate)}
               isIntegrationInstalled={setupStatus !== 'not-installed'}
             />
           </Route>

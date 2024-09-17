@@ -7,12 +7,14 @@
 import React from 'react';
 import { i18n } from '@kbn/i18n';
 import type { UseQueryResult } from '@tanstack/react-query';
-import { EuiEmptyPrompt } from '@elastic/eui';
+import { EuiButton, EuiEmptyPrompt, EuiToolTip } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { NoDataPage, NoDataPageProps } from '@kbn/kibana-react-plugin/public';
 import { css } from '@emotion/react';
+import { PosturePolicyTemplate } from '../../common/types_old';
 import { FullSizeCenteredPage } from './full_size_centered_page';
 import { CspLoadingState } from './csp_loading_state';
+import { useCspIntegrationLink } from '../common/navigation/use_csp_integration_link';
 
 export const LOADING_STATE_TEST_SUBJECT = 'cloud_posture_page_loading';
 export const ERROR_STATE_TEST_SUBJECT = 'cloud_posture_page_error';
@@ -45,7 +47,6 @@ export const isCommonError = (error: unknown): error is CommonError => {
 export interface CspNoDataPageProps {
   pageTitle: NoDataPageProps['pageTitle'];
   docsLink: NoDataPageProps['docsLink'];
-  actionHref: NoDataPageProps['actions']['elasticAgent']['href'];
   actionTitle: NoDataPageProps['actions']['elasticAgent']['title'];
   actionDescription: NoDataPageProps['actions']['elasticAgent']['description'];
   testId: string;
@@ -54,11 +55,21 @@ export interface CspNoDataPageProps {
 export const CspNoDataPage = ({
   pageTitle,
   docsLink,
-  actionHref,
   actionTitle,
   actionDescription,
   testId,
-}: CspNoDataPageProps) => {
+  policyTemplate,
+}: CspNoDataPageProps & {
+  policyTemplate: PosturePolicyTemplate;
+}) => {
+  const integrationLink = useCspIntegrationLink(policyTemplate);
+
+  const withErrorTooltip = (component: JSX.Element) => {
+    if (!integrationLink?.isError) return component;
+
+    return <EuiToolTip content={integrationLink?.error}>{component}</EuiToolTip>;
+  };
+
   return (
     <NoDataPage
       data-test-subj={testId}
@@ -77,10 +88,17 @@ export const CspNoDataPage = ({
       logo="logoSecurity"
       actions={{
         elasticAgent: {
-          href: actionHref,
-          isDisabled: !actionHref,
-          title: actionTitle,
           description: actionDescription,
+          button: withErrorTooltip(
+            <EuiButton
+              color="primary"
+              fill
+              href={integrationLink?.link}
+              isDisabled={!integrationLink || integrationLink.isError}
+            >
+              {actionTitle}
+            </EuiButton>
+          ),
         },
       }}
     />

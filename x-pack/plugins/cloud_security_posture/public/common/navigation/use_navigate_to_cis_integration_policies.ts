@@ -11,14 +11,11 @@ import { useKibana } from '../hooks/use_kibana';
 import { useCspBenchmarkIntegrationsV1 } from '../../pages/benchmarks/use_csp_benchmark_integrations';
 import { PostureTypes } from '../../../common/types_old';
 
-export const useCISIntegrationPoliciesLink = ({
-  postureType,
-}: {
-  postureType: PostureTypes;
-}): string | undefined => {
+export const useCISIntegrationPoliciesLink = ({ postureType }: { postureType: PostureTypes }) => {
   const { http } = useKibana().services;
+
   const cisIntegration = useCisKubernetesIntegration();
-  // using an existing hook to get agent id and package policy id
+
   const cspBenchmarkIntegrations = useCspBenchmarkIntegrationsV1({
     name: '',
     page: 1,
@@ -26,11 +23,27 @@ export const useCISIntegrationPoliciesLink = ({
     sortField: 'package_policy.name',
     sortOrder: 'asc',
   });
-  if (!cisIntegration.isSuccess) return;
 
-  const intergrations = cspBenchmarkIntegrations.data?.items;
+  if (cisIntegration.isError) {
+    return {
+      isError: true,
+      error: String(cisIntegration.error),
+    };
+  }
+  if (cspBenchmarkIntegrations.isError) {
+    return {
+      isError: true,
+      error: String(cspBenchmarkIntegrations.error),
+    };
+  }
 
-  const matchedIntegration = intergrations?.find(
+  if (!cisIntegration.data || !cspBenchmarkIntegrations.data) {
+    return undefined;
+  }
+
+  const integrations = cspBenchmarkIntegrations.data?.items;
+
+  const matchedIntegration = integrations?.find(
     (integration) =>
       integration?.package_policy?.inputs?.find((input) => input?.enabled)?.policy_template ===
       postureType
@@ -49,5 +62,8 @@ export const useCISIntegrationPoliciesLink = ({
     })
     .join('');
 
-  return http.basePath.prepend(path);
+  return {
+    isError: false,
+    link: http.basePath.prepend(path),
+  };
 };
