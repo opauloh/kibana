@@ -18,7 +18,12 @@ import type {
   IndexStatus,
   CspStatusCode,
 } from '@kbn/cloud-security-posture-common';
-import type { SavedObjectsClientContract, Logger, ElasticsearchClient } from '@kbn/core/server';
+import type {
+  SavedObjectsClientContract,
+  Logger,
+  ElasticsearchClient,
+  CoreSetup,
+} from '@kbn/core/server';
 import type {
   AgentPolicyServiceInterface,
   AgentService,
@@ -41,11 +46,14 @@ import {
   POSTURE_TYPE_ALL,
   LATEST_VULNERABILITIES_RETENTION_POLICY,
   CDR_VULNERABILITIES_INDEX_PATTERN,
+  FINDINGS_TYPES,
 } from '../../../common/constants';
 import type {
   CspApiRequestHandlerContext,
   CspRequestHandlerContext,
   CspRouter,
+  CspServerPluginStart,
+  CspServerPluginStartDeps,
   StatusResponseInfo,
 } from '../../types';
 import type { PostureTypes } from '../../../common/types_old';
@@ -340,18 +348,22 @@ export const getCspStatus = async ({
     {
       index: LATEST_FINDINGS_INDEX_DEFAULT_NS,
       status: findingsLatestIndexStatus,
+      type: FINDINGS_TYPES.MISCONFIGURATION,
     },
     {
       index: FINDINGS_INDEX_PATTERN,
       status: findingsIndexStatus,
+      type: FINDINGS_TYPES.MISCONFIGURATION,
     },
     {
       index: BENCHMARK_SCORE_INDEX_DEFAULT_NS,
       status: scoreIndexStatus,
+      type: FINDINGS_TYPES.MISCONFIGURATION,
     },
     {
       index: CDR_LATEST_NATIVE_VULNERABILITIES_INDEX_PATTERN,
       status: vulnerabilitiesLatestIndexStatus,
+      type: FINDINGS_TYPES.VULNERABILITY,
     },
   ];
 
@@ -386,7 +398,6 @@ export const getCspStatus = async ({
     {
       latest: vulnerabilitiesLatestIndexStatus,
       stream: vulnerabilitiesIndexStatus,
-      score: scoreIndexStatus,
     },
     installation,
     healthyAgentsVulMgmt,
@@ -429,7 +440,8 @@ export const statusQueryParamsSchema = schema.object({
 });
 
 export const defineGetCspStatusRoute = (
-  router: CspRouter
+  router: CspRouter,
+  core: CoreSetup<CspServerPluginStartDeps, CspServerPluginStart>
 ): VersionedRoute<'get', CspRequestHandlerContext> =>
   router.versioned
     .get({
@@ -450,6 +462,9 @@ export const defineGetCspStatusRoute = (
       },
       async (context, request, response) => {
         const cspContext = await context.csp;
+        const [coreStart] = await core.getStartServices();
+        const soClient = coreStart.savedObjects.createInternalRepository();
+
         try {
           if (request.query.check === 'init') {
             return response.ok({
@@ -461,6 +476,7 @@ export const defineGetCspStatusRoute = (
           const status: CspSetupStatus = await getCspStatus({
             ...cspContext,
             esClient: cspContext.esClient.asCurrentUser,
+            soClient,
           });
           return response.ok({
             body: status,

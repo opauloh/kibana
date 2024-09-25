@@ -24,7 +24,7 @@ import { i18n } from '@kbn/i18n';
 import { css } from '@emotion/react';
 import type { IndexDetails } from '@kbn/cloud-security-posture-common';
 import { useCspSetupStatusApi } from '@kbn/cloud-security-posture/src/hooks/use_csp_setup_status_api';
-import { VULN_MGMT_POLICY_TEMPLATE } from '../../common/constants';
+import { FINDINGS_TYPES, VULN_MGMT_POLICY_TEMPLATE } from '../../common/constants';
 import { FullSizeCenteredPage } from './full_size_centered_page';
 import { CloudPosturePage } from './cloud_posture_page';
 import {
@@ -254,9 +254,11 @@ export const NoVulnerabilitiesStates = () => {
   const unprivilegedIndices =
     indicesStatus &&
     indicesStatus
-      .filter((idxDetails) => idxDetails.status === 'unprivileged')
-      .map((idxDetails: IndexDetails) => idxDetails.index)
-      .sort((a, b) => a.localeCompare(b));
+      .filter(
+        (idxDetails) =>
+          idxDetails.status === 'unprivileged' && idxDetails.type === FINDINGS_TYPES.VULNERABILITY
+      )
+      .map((idxDetails: IndexDetails) => idxDetails.index);
 
   const render = () => {
     if (status === 'indexing' || status === 'waiting_for_results')

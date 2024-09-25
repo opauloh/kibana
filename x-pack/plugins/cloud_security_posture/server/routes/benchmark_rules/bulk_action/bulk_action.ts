@@ -11,7 +11,8 @@ import {
   cspBenchmarkRulesBulkActionRequestSchema,
 } from '@kbn/cloud-security-posture-common/schema/rules/v4';
 import type { CspBenchmarkRulesBulkActionResponse } from '@kbn/cloud-security-posture-common/schema/rules/v4';
-import { CspRouter } from '../../../types';
+import { CoreSetup } from '@kbn/core-lifecycle-server';
+import { CspRouter, CspServerPluginStart, CspServerPluginStartDeps } from '../../../types';
 
 import { CSP_BENCHMARK_RULES_BULK_ACTION_ROUTE_PATH } from '../../../../common/constants';
 import { bulkActionBenchmarkRulesHandler } from './v1';
@@ -39,7 +40,10 @@ import { bulkActionBenchmarkRulesHandler } from './v1';
 	  message: string;                 // Success message
 	}
 	*/
-export const defineBulkActionCspBenchmarkRulesRoute = (router: CspRouter) =>
+export const defineBulkActionCspBenchmarkRulesRoute = (
+  router: CspRouter,
+  core: CoreSetup<CspServerPluginStartDeps, CspServerPluginStart>
+) =>
   router.versioned
     .post({
       access: 'internal',
@@ -60,6 +64,9 @@ export const defineBulkActionCspBenchmarkRulesRoute = (router: CspRouter) =>
       async (context, request, response) => {
         const cspContext = await context.csp;
 
+        const [coreStart] = await core.getStartServices();
+        const soClient = coreStart.savedObjects.createInternalRepository();
+
         try {
           const requestBody: CspBenchmarkRulesBulkActionRequestSchema = request.body;
 
@@ -68,7 +75,7 @@ export const defineBulkActionCspBenchmarkRulesRoute = (router: CspRouter) =>
           const detectionRulesClient = (await context.alerting).getRulesClient();
 
           const handlerResponse = await bulkActionBenchmarkRulesHandler(
-            cspContext.soClient,
+            soClient,
             cspContext.encryptedSavedObjects,
             detectionRulesClient,
             benchmarkRulesToUpdate,

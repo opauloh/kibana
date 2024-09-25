@@ -11,6 +11,7 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiFlexItemProps,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
@@ -56,8 +57,7 @@ export const SummarySection = ({
   complianceData: ComplianceDashboardDataV2;
 }) => {
   const navToFindings = useNavigateFindings();
-  const cspmIntegrationLink = useCspIntegrationLink(CSPM_POLICY_TEMPLATE);
-  const kspmIntegrationLink = useCspIntegrationLink(KSPM_POLICY_TEMPLATE);
+  const integrationLink = useCspIntegrationLink(dashboardType);
 
   const { euiTheme } = useEuiTheme();
 
@@ -87,8 +87,14 @@ export const SummarySection = ({
     ]);
   };
 
-  const counters: CspCounterCardProps[] = useMemo(
-    () => [
+  const counters: CspCounterCardProps[] = useMemo(() => {
+    const withErrorTooltip = (component: JSX.Element) => {
+      if (!integrationLink?.isError) return component;
+
+      return <EuiToolTip content={integrationLink?.error}>{component}</EuiToolTip>;
+    };
+
+    return [
       {
         id: DASHBOARD_COUNTER_CARDS.CLUSTERS_EVALUATED,
         description:
@@ -102,13 +108,12 @@ export const SummarySection = ({
                 { defaultMessage: 'Accounts Evaluated' }
               ),
         title: <AccountsEvaluatedWidget benchmarkAssets={complianceData.benchmarks} />,
-        button: (
+        button: withErrorTooltip(
           <EuiButtonEmpty
             iconType="listAdd"
             target="_blank"
-            href={
-              dashboardType === KSPM_POLICY_TEMPLATE ? kspmIntegrationLink : cspmIntegrationLink
-            }
+            href={integrationLink?.link}
+            isDisabled={!integrationLink?.link}
           >
             {dashboardType === KSPM_POLICY_TEMPLATE
               ? i18n.translate(
@@ -146,16 +151,14 @@ export const SummarySection = ({
           </EuiButtonEmpty>
         ),
       },
-    ],
-    [
-      complianceData.benchmarks,
-      complianceData.stats.resourcesEvaluated,
-      cspmIntegrationLink,
-      dashboardType,
-      kspmIntegrationLink,
-      navToFindings,
-    ]
-  );
+    ];
+  }, [
+    complianceData.benchmarks,
+    complianceData.stats.resourcesEvaluated,
+    dashboardType,
+    integrationLink,
+    navToFindings,
+  ]);
   const chartTitle = i18n.translate(
     'xpack.csp.dashboard.summarySection.complianceScorePanelTitle',
     {

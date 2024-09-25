@@ -349,7 +349,8 @@ export const ComplianceDashboard = () => {
       });
     };
 
-    const selectedTab = currentTabUrlState ?? preferredTabUrlState;
+    const selectedTab = currentTabUrlState ?? preferredTabUrlState ?? POSTURE_TYPE_CSPM;
+
     return isCloudSecurityPostureInstalled
       ? [
           {

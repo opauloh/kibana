@@ -51,7 +51,7 @@ export const useCspBenchmarkIntegrationsV1 = ({
 
 export const BENCHMARK_INTEGRATION_QUERY_KEY_V2 = ['csp_benchmark_integrations_v2'];
 
-export const useCspBenchmarkIntegrationsV2 = () => {
+export const useCspBenchmarkIntegrationsV2 = (enabled = true) => {
   const { http } = useKibana().services;
 
   return useQuery(
@@ -60,6 +60,6 @@ export const useCspBenchmarkIntegrationsV2 = () => {
       http.get<GetBenchmarkResponse>(BENCHMARKS_ROUTE_PATH, {
         version: '2',
       }),
-    { keepPreviousData: true }
+    { keepPreviousData: true, enabled }
   );
 };

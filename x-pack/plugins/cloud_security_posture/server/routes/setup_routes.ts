@@ -42,14 +42,14 @@ export function setupRoutes({
   isPluginInitialized(): boolean;
 }) {
   const router = core.http.createRouter<CspRequestHandlerContext>();
-  defineGetComplianceDashboardRoute(router);
+  defineGetComplianceDashboardRoute(router, core);
   defineGetVulnerabilitiesDashboardRoute(router);
-  defineGetBenchmarksRoute(router);
-  defineGetCspStatusRoute(router);
-  defineFindCspBenchmarkRuleRoute(router);
+  defineGetBenchmarksRoute(router, core);
+  defineGetCspStatusRoute(router, core);
+  defineFindCspBenchmarkRuleRoute(router, core);
   defineGetDetectionEngineAlertsStatus(router);
-  defineBulkActionCspBenchmarkRulesRoute(router);
-  defineGetCspBenchmarkRulesStatesRoute(router);
+  defineBulkActionCspBenchmarkRulesRoute(router, core);
+  defineGetCspBenchmarkRulesStatesRoute(router, core);
 
   core.http.registerOnPreRouting(async (request, response, toolkit) => {
     if (request.url.pathname.includes(CLOUD_SECURITY_INTERTAL_PREFIX_ROUTE_PATH)) {

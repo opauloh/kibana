@@ -25,7 +25,8 @@ export const getBenchmarksData = async (
   soClient: SavedObjectsClientContract,
   encryptedSoClient: SavedObjectsClientContract,
   esClient: ElasticsearchClient,
-  logger: Logger
+  logger: Logger,
+  encryptedSoClientInternal: SavedObjectsClientContract
 ): Promise<Benchmark[]> => {
   // Returns a list of benchmark based on their Version and Benchmark ID
 
@@ -56,7 +57,7 @@ export const getBenchmarksData = async (
   });
 
   const benchmarkAgg: any = benchmarksResponse.aggregations;
-  const rulesFilter = await getMutedRulesFilterQuery(encryptedSoClient);
+  const rulesFilter = await getMutedRulesFilterQuery(encryptedSoClient, encryptedSoClientInternal);
 
   const { id: pitId } = await esClient.openPointInTime({
     index: LATEST_FINDINGS_INDEX_DEFAULT_NS,
@@ -114,9 +115,16 @@ export const getBenchmarks = async (
   esClient: ElasticsearchClient,
   soClient: SavedObjectsClientContract,
   encryptedSoClient: SavedObjectsClientContract,
-  logger: Logger
+  logger: Logger,
+  encryptedSoClientInternal: SavedObjectsClientContract
 ) => {
-  const benchmarks = await getBenchmarksData(soClient, encryptedSoClient, esClient, logger);
+  const benchmarks = await getBenchmarksData(
+    soClient,
+    encryptedSoClient,
+    esClient,
+    logger,
+    encryptedSoClientInternal
+  );
   const getBenchmarkResponse = {
     items: benchmarks,
   };

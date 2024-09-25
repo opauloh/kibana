@@ -29,10 +29,11 @@ export const createCspSettingObject = async (soClient: SavedObjectsClientContrac
 };
 
 export const getCspBenchmarkRulesStatesHandler = async (
-  encryptedSoClient: SavedObjectsClientContract | ISavedObjectsRepository
+  encryptedSoClient: SavedObjectsClientContract | ISavedObjectsRepository,
+  encryptedSoClientInternal: SavedObjectsClientContract
 ): Promise<CspBenchmarkRulesStates> => {
   try {
-    const getSoResponse = await encryptedSoClient.get<CspSettings>(
+    const getSoResponse = await encryptedSoClientInternal.get<CspSettings>(
       INTERNAL_CSP_SETTINGS_SAVED_OBJECT_TYPE,
       INTERNAL_CSP_SETTINGS_SAVED_OBJECT_ID
     );
@@ -51,9 +52,13 @@ export const getCspBenchmarkRulesStatesHandler = async (
 };
 
 export const getMutedRulesFilterQuery = async (
-  encryptedSoClient: ISavedObjectsRepository | SavedObjectsClientContract
+  encryptedSoClient: ISavedObjectsRepository | SavedObjectsClientContract,
+  encryptedSoClientInternal: SavedObjectsClientContract
 ): Promise<QueryDslQueryContainer[]> => {
-  const rulesStates = await getCspBenchmarkRulesStatesHandler(encryptedSoClient);
+  const rulesStates = await getCspBenchmarkRulesStatesHandler(
+    encryptedSoClient,
+    encryptedSoClientInternal
+  );
   const mutedRulesFilterQuery = buildMutedRulesFilter(rulesStates);
   return mutedRulesFilterQuery;
 };

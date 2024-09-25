@@ -146,7 +146,7 @@ const IndexTimeout = () => (
   />
 );
 
-const Unprivileged = ({ unprivilegedIndices }: { unprivilegedIndices: string[] }) => (
+export const Unprivileged = ({ unprivilegedIndices }: { unprivilegedIndices: string[] }) => (
   <EuiEmptyPrompt
     data-test-subj={NO_FINDINGS_STATUS_TEST_SUBJ.UNPRIVILEGED}
     color="plain"
@@ -187,6 +187,18 @@ const EmptySecurityFindingsPrompt = () => {
   const kspmIntegrationLink = useCspIntegrationLink(KSPM_POLICY_TEMPLATE);
   const cspmIntegrationLink = useCspIntegrationLink(CSPM_POLICY_TEMPLATE);
 
+  const withErrorTooltipCspm = (component: JSX.Element) => {
+    if (!cspmIntegrationLink?.isError) return component;
+
+    return <EuiToolTip content={cspmIntegrationLink?.error}>{component}</EuiToolTip>;
+  };
+
+  const withErrorTooltipKspm = (component: JSX.Element) => {
+    if (!kspmIntegrationLink?.isError) return component;
+
+    return <EuiToolTip content={kspmIntegrationLink?.error}>{component}</EuiToolTip>;
+  };
+
   return (
     <EuiEmptyPrompt
       data-test-subj={PACKAGE_NOT_INSTALLED_TEST_SUBJECT}
@@ -222,32 +234,36 @@ const EmptySecurityFindingsPrompt = () => {
       actions={
         <EuiFlexGroup>
           <EuiFlexItem grow={false}>
-            <EuiButton
-              color="primary"
-              fill
-              href={cspmIntegrationLink}
-              isDisabled={!cspmIntegrationLink}
-              data-test-subj={CSPM_NOT_INSTALLED_ACTION_SUBJ}
-            >
-              <FormattedMessage
-                id="xpack.csp.cloudPosturePage.packageNotInstalledRenderer.addCspmIntegrationButtonTitle"
-                defaultMessage="Add CSPM Integration"
-              />
-            </EuiButton>
+            {withErrorTooltipCspm(
+              <EuiButton
+                color="primary"
+                fill
+                href={cspmIntegrationLink?.link || ''}
+                isDisabled={!cspmIntegrationLink?.link}
+                data-test-subj={CSPM_NOT_INSTALLED_ACTION_SUBJ}
+              >
+                <FormattedMessage
+                  id="xpack.csp.cloudPosturePage.packageNotInstalledRenderer.addCspmIntegrationButtonTitle"
+                  defaultMessage="Add CSPM Integration"
+                />
+              </EuiButton>
+            )}
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <EuiButton
-              color="primary"
-              fill
-              href={kspmIntegrationLink}
-              isDisabled={!kspmIntegrationLink}
-              data-test-subj={KSPM_NOT_INSTALLED_ACTION_SUBJ}
-            >
-              <FormattedMessage
-                id="xpack.csp.cloudPosturePage.packageNotInstalledRenderer.addKspmIntegrationButtonTitle"
-                defaultMessage="Add KSPM Integration"
-              />
-            </EuiButton>
+            {withErrorTooltipKspm(
+              <EuiButton
+                color="primary"
+                fill
+                href={kspmIntegrationLink?.link}
+                isDisabled={!kspmIntegrationLink?.link}
+                data-test-subj={KSPM_NOT_INSTALLED_ACTION_SUBJ}
+              >
+                <FormattedMessage
+                  id="xpack.csp.cloudPosturePage.packageNotInstalledRenderer.addKspmIntegrationButtonTitle"
+                  defaultMessage="Add KSPM Integration"
+                />
+              </EuiButton>
+            )}
           </EuiFlexItem>
         </EuiFlexGroup>
       }

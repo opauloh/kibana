@@ -6,16 +6,23 @@
  */
 
 import { transformError } from '@kbn/securitysolution-es-utils';
-import { BENCHMARKS_ROUTE_PATH } from '../../../common/constants';
+import { CoreSetup } from '@kbn/core-lifecycle-server';
+import {
+  BENCHMARKS_ROUTE_PATH,
+  INTERNAL_CSP_SETTINGS_SAVED_OBJECT_TYPE,
+} from '../../../common/constants';
 import { benchmarksQueryParamsSchema } from '../../../common/types/benchmarks/v1';
-import { CspRouter } from '../../types';
+import { CspRouter, CspServerPluginStart, CspServerPluginStartDeps } from '../../types';
 import { getBenchmarks as getBenchmarksV1 } from './v1';
 import { getBenchmarks as getBenchmarksV2 } from './v2';
 import { benchmarkResponseSchema } from '../../../common/types/latest';
 
 export const PACKAGE_POLICY_SAVED_OBJECT_TYPE = 'ingest-package-policies';
 
-export const defineGetBenchmarksRoute = (router: CspRouter) =>
+export const defineGetBenchmarksRoute = (
+  router: CspRouter,
+  core: CoreSetup<CspServerPluginStartDeps, CspServerPluginStart>
+) =>
   router.versioned
     .get({
       access: 'internal',
@@ -71,12 +78,18 @@ export const defineGetBenchmarksRoute = (router: CspRouter) =>
       async (context, request, response) => {
         const cspContext = await context.csp;
         const esClient = cspContext.esClient.asCurrentUser;
+        const [coreStart] = await core.getStartServices();
+        const soClient = coreStart.savedObjects.createInternalRepository();
+        const encryptedSoClientInternal = coreStart.savedObjects.createInternalRepository([
+          INTERNAL_CSP_SETTINGS_SAVED_OBJECT_TYPE,
+        ]);
         try {
           const cspBenchmarks = await getBenchmarksV2(
             esClient,
-            cspContext.soClient,
+            soClient,
             cspContext.encryptedSavedObjects,
-            cspContext.logger
+            cspContext.logger,
+            encryptedSoClientInternal
           );
           return response.ok({
             body: cspBenchmarks,

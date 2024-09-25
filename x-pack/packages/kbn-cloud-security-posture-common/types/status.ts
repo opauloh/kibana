@@ -26,9 +26,12 @@ export type IndexStatus =
   | 'empty' // Index doesn't contain documents (or doesn't exist)
   | 'unprivileged'; // User doesn't have access to query the index
 
+export type FINDING_TYPE = 'misconfiguration' | 'vulnerability';
+
 export interface IndexDetails {
   index: string;
   status: IndexStatus;
+  type: FINDING_TYPE;
 }
 
 export interface BaseCspSetupBothPolicy {

@@ -23,7 +23,7 @@ import { i18n } from '@kbn/i18n';
 import { pagePathGetters } from '@kbn/fleet-plugin/public';
 import { extractErrorMessage } from '@kbn/cloud-security-posture-common';
 import { useCspSetupStatusApi } from '@kbn/cloud-security-posture/src/hooks/use_csp_setup_status_api';
-import { CLOUD_SECURITY_POSTURE_PACKAGE_NAME } from '../../../common/constants';
+import { CLOUD_SECURITY_POSTURE_PACKAGE_NAME, FINDINGS_TYPES } from '../../../common/constants';
 import { CloudPosturePageTitle } from '../../components/cloud_posture_page_title';
 import { CloudPosturePage } from '../../components/cloud_posture_page';
 import { BenchmarksTable } from './benchmarks_table';
@@ -39,7 +39,7 @@ import {
 } from '../../common/constants';
 import { usePageSize } from '../../common/hooks/use_page_size';
 import { useKibana } from '../../common/hooks/use_kibana';
-import { NoFindingsStates } from '../../components/no_findings_states';
+import { NoFindingsStates, Unprivileged } from '../../components/no_findings_states';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -142,6 +142,26 @@ const BenchmarkSearchField = ({
 };
 
 export const Benchmarks = () => {
+  // Check if we have any CSP Integration or not
+  const getSetupStatus = useCspSetupStatusApi({
+    refetchInterval: NO_FINDINGS_STATUS_REFRESH_INTERVAL_MS,
+  });
+  const showConfigurationInstallPrompt =
+    getSetupStatus.data?.kspm?.status === 'not-installed' &&
+    getSetupStatus.data?.cspm?.status === 'not-installed';
+
+  const misconfigurationUnprivilegedIndices =
+    getSetupStatus.data?.indicesDetails
+      .filter(
+        ({ type, status, index }) =>
+          type === FINDINGS_TYPES.MISCONFIGURATION && status === 'unprivileged'
+      )
+      .map(({ index }) => index) || [];
+
+  const hasUnprivilegedIndices = Boolean(
+    getSetupStatus.data && misconfigurationUnprivilegedIndices.length > 0
+  );
+
   const { pageSize, setPageSize } = usePageSize(LOCAL_STORAGE_PAGE_SIZE_BENCHMARK_KEY);
   const [query, setQuery] = useState<UseCspBenchmarkIntegrationsProps>({
     name: '',
@@ -151,7 +171,7 @@ export const Benchmarks = () => {
     sortOrder: 'asc',
   });
 
-  const queryResult = useCspBenchmarkIntegrationsV2();
+  const queryResult = useCspBenchmarkIntegrationsV2(hasUnprivilegedIndices);
   const lowerCaseQueryName = query.name.toLowerCase();
   const benchmarkResult =
     queryResult.data?.items.filter((obj) =>
@@ -159,16 +179,8 @@ export const Benchmarks = () => {
     ) || [];
   const totalItemCount = queryResult.data?.items.length || 0;
 
-  // Check if we have any CSP Integration or not
-  const getSetupStatus = useCspSetupStatusApi({
-    refetchInterval: NO_FINDINGS_STATUS_REFRESH_INTERVAL_MS,
-  });
-  const showConfigurationInstallPrompt =
-    getSetupStatus.data?.kspm?.status === 'not-installed' &&
-    getSetupStatus.data?.cspm?.status === 'not-installed';
-
   return (
-    <CloudPosturePage>
+    <CloudPosturePage query={getSetupStatus}>
       <EuiPageHeader
         data-test-subj={TEST_SUBJ.BENCHMARKS_PAGE_HEADER}
         pageTitle={
@@ -184,6 +196,8 @@ export const Benchmarks = () => {
       <EuiSpacer />
       {showConfigurationInstallPrompt ? (
         <NoFindingsStates postureType={'all'} />
+      ) : hasUnprivilegedIndices ? (
+        <Unprivileged unprivilegedIndices={misconfigurationUnprivilegedIndices} />
       ) : (
         <>
           <BenchmarkSearchField

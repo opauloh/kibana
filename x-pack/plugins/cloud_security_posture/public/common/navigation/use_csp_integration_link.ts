@@ -6,9 +6,20 @@
  */
 
 import { pagePathGetters, pkgKeyFromPackageInfo } from '@kbn/fleet-plugin/public';
+import { i18n } from '@kbn/i18n';
 import type { CloudSecurityPolicyTemplate } from '../../../common/types_old';
 import { useCisKubernetesIntegration } from '../api/use_cis_kubernetes_integration';
 import { useKibana } from '../hooks/use_kibana';
+
+const parseIntegrationResponseError = (error: Error) => {
+  if (String(error) === 'Error: Forbidden') {
+    return i18n.translate('xpack.cloudSecurityPosture.cisKubernetesIntegration.forbiddenError', {
+      defaultMessage: 'You do not have Kibana integrations privileges',
+    });
+  }
+
+  return String(error);
+};
 
 export const useCspIntegrationLink = (policyTemplate: CloudSecurityPolicyTemplate) => {
   const { http } = useKibana().services;
@@ -17,7 +28,7 @@ export const useCspIntegrationLink = (policyTemplate: CloudSecurityPolicyTemplat
   if (cisIntegration.isError) {
     return {
       isError: true,
-      error: String(cisIntegration.error),
+      error: parseIntegrationResponseError(cisIntegration.error),
     };
   }
 

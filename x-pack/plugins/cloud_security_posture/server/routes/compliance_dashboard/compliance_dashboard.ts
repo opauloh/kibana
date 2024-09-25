@@ -8,6 +8,7 @@
 import { transformError } from '@kbn/securitysolution-es-utils';
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import { MappingRuntimeFields } from '@elastic/elasticsearch/lib/api/types';
+import { CoreSetup } from '@kbn/core-lifecycle-server';
 import { getComplianceDashboardSchema } from '../../../common/schemas/stats';
 import { getSafePostureTypeRuntimeMapping } from '../../../common/runtime_mappings/get_safe_posture_type_runtime_mapping';
 import type {
@@ -16,11 +17,15 @@ import type {
   GetComplianceDashboardRequest,
   ComplianceDashboardDataV2,
 } from '../../../common/types_old';
-import { LATEST_FINDINGS_INDEX_DEFAULT_NS, STATS_ROUTE_PATH } from '../../../common/constants';
+import {
+  INTERNAL_CSP_SETTINGS_SAVED_OBJECT_TYPE,
+  LATEST_FINDINGS_INDEX_DEFAULT_NS,
+  STATS_ROUTE_PATH,
+} from '../../../common/constants';
 import { getGroupedFindingsEvaluation } from './get_grouped_findings_evaluation';
 import { ClusterWithoutTrend, getClusters } from './get_clusters';
 import { getStats } from './get_stats';
-import { CspRouter } from '../../types';
+import { CspRouter, CspServerPluginStart, CspServerPluginStartDeps } from '../../types';
 import { getTrends, Trends } from './get_trends';
 import { BenchmarkWithoutTrend, getBenchmarks } from './get_benchmarks';
 import { toBenchmarkDocFieldKey } from '../../lib/mapping_field_util';
@@ -60,7 +65,10 @@ const getBenchmarksTrends = (benchmarksWithoutTrends: BenchmarkWithoutTrend[], t
 const getSummaryTrend = (trends: Trends) =>
   trends.map(({ timestamp, summary }) => ({ timestamp, ...summary }));
 
-export const defineGetComplianceDashboardRoute = (router: CspRouter) =>
+export const defineGetComplianceDashboardRoute = (
+  router: CspRouter,
+  core: CoreSetup<CspServerPluginStartDeps, CspServerPluginStart>
+) =>
   router.versioned
     .get({
       access: 'internal',
@@ -154,10 +162,18 @@ export const defineGetComplianceDashboardRoute = (router: CspRouter) =>
         const cspContext = await context.csp;
         const logger = cspContext.logger;
 
+        const [coreStart] = await core.getStartServices();
+        const encryptedSoClientInternal = coreStart.savedObjects.createInternalRepository([
+          INTERNAL_CSP_SETTINGS_SAVED_OBJECT_TYPE,
+        ]);
+
         try {
           const esClient = cspContext.esClient.asCurrentUser;
           const encryptedSoClient = cspContext.encryptedSavedObjects;
-          const filteredRules = await getMutedRulesFilterQuery(encryptedSoClient);
+          const filteredRules = await getMutedRulesFilterQuery(
+            encryptedSoClient,
+            encryptedSoClientInternal
+          );
 
           const { id: pitId } = await esClient.openPointInTime({
             index: LATEST_FINDINGS_INDEX_DEFAULT_NS,

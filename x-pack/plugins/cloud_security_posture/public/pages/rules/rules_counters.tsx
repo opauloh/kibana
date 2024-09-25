@@ -12,6 +12,7 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiImage,
+  EuiToolTip,
 } from '@elastic/eui';
 import React from 'react';
 import { i18n } from '@kbn/i18n';
@@ -20,7 +21,10 @@ import { Chart, Partition, PartitionLayout, Settings } from '@elastic/charts';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { statusColors } from '@kbn/cloud-security-posture';
 import { useNavigateFindings } from '@kbn/cloud-security-posture/src/hooks/use_navigate_findings';
-import { useBenchmarkDynamicValues } from '../../common/hooks/use_benchmark_dynamic_values';
+import {
+  BenchmarkDynamicValues,
+  useBenchmarkDynamicValues,
+} from '../../common/hooks/use_benchmark_dynamic_values';
 import { getPostureScorePercentage } from '../compliance_dashboard/compliance_charts/compliance_score_chart';
 import { RULE_COUNTERS_TEST_SUBJ } from './test_subjects';
 import noDataIllustration from '../../assets/illustrations/no_data_illustration.svg';
@@ -29,6 +33,7 @@ import { RULE_FAILED, RULE_PASSED } from '../../../common/constants';
 import { useCspBenchmarkIntegrationsV2 } from '../benchmarks/use_csp_benchmark_integrations';
 import { CspCounterCard } from '../../components/csp_counter_card';
 import { useKibana } from '../../common/hooks/use_kibana';
+import { useCspIntegrationLink } from '../../common/navigation/use_csp_integration_link';
 
 const EvaluationPieChart = ({ failed, passed }: { failed: number; passed: number }) => {
   const {
@@ -103,11 +108,19 @@ export const RulesCounters = ({
       benchmark.version === rulesPageParams.benchmarkVersion
   );
 
+  const benchmarkValues = getBenchmarkDynamicValues(benchmarkRulesStats!.id);
+
+  const integrationLink = useCspIntegrationLink(benchmarkValues.policyTemplate);
+
+  const withErrorTooltip = (component: JSX.Element) => {
+    if (!integrationLink?.isError) return component;
+
+    return <EuiToolTip content={integrationLink?.error}>{component}</EuiToolTip>;
+  };
+
   if (!benchmarkRulesStats) {
     return <></>;
   }
-
-  const benchmarkValues = getBenchmarkDynamicValues(benchmarkRulesStats.id);
 
   if (benchmarkRulesStats.score.totalFindings === 0) {
     return (
@@ -140,7 +153,7 @@ export const RulesCounters = ({
           <p>
             <FormattedMessage
               id="xpack.csp.rulesPage.rulesCounterEmptyState.emptyStateDescription"
-              defaultMessage="Add your {resourceName} in {integrationType} to begin detecing misconfigurations"
+              defaultMessage="Add your {resourceName} in {integrationType} to begin detecting misconfigurations"
               values={{
                 resourceName: benchmarkValues.resourceName.toLowerCase(),
                 integrationType: benchmarkValues.integrationType,
@@ -149,15 +162,22 @@ export const RulesCounters = ({
           </p>
         }
         actions={[
-          <EuiButton color="primary" fill href={benchmarkValues.integrationLink}>
-            <FormattedMessage
-              id="xpack.csp.rulesPage.rulesCounterEmptyState.emptyPrimapryButtonTitle"
-              defaultMessage="Add {integrationType} integration"
-              values={{
-                integrationType: benchmarkValues.integrationType,
-              }}
-            />
-          </EuiButton>,
+          withErrorTooltip(
+            <EuiButton
+              color="primary"
+              fill
+              href={integrationLink?.link}
+              isDisabled={!integrationLink?.link}
+            >
+              <FormattedMessage
+                id="xpack.csp.rulesPage.rulesCounterEmptyState.emptyPrimapryButtonTitle"
+                defaultMessage="Add {integrationType} integration"
+                values={{
+                  integrationType: benchmarkValues.integrationType,
+                }}
+              />
+            </EuiButton>
+          ),
           <EuiButtonEmpty color="primary" href={benchmarkValues.learnMoreLink} target="_blank">
             <FormattedMessage
               id="xpack.csp.rulesPage.rulesCounterEmptyState.emptyLearnMoreButtonTitle"
@@ -211,20 +231,7 @@ export const RulesCounters = ({
         },
       }),
       title: benchmarkRulesStats.evaluation || 0,
-      button: (
-        <EuiButtonEmpty
-          data-test-subj={RULE_COUNTERS_TEST_SUBJ.INTEGRATIONS_EVALUATED_BUTTON}
-          iconType="listAdd"
-          href={benchmarkValues.integrationLink}
-        >
-          {i18n.translate('xpack.csp.rulesCounters.accountsEvaluatedButton', {
-            defaultMessage: 'Add more {resourceName}',
-            values: {
-              resourceName: benchmarkValues.resourceName.toLowerCase(),
-            },
-          })}
-        </EuiButtonEmpty>
-      ),
+      button: <AddMoreButton benchmarkValues={benchmarkValues} />,
     },
     {
       id: RULE_COUNTERS_TEST_SUBJ.FAILED_FINDINGS_COUNTER,
@@ -279,5 +286,31 @@ export const RulesCounters = ({
         </EuiFlexItem>
       ))}
     </EuiFlexGroup>
+  );
+};
+
+const AddMoreButton = ({ benchmarkValues }: { benchmarkValues: BenchmarkDynamicValues }) => {
+  const integrationLink = useCspIntegrationLink(benchmarkValues.policyTemplate);
+
+  const withErrorTooltip = (component: JSX.Element) => {
+    if (!integrationLink?.isError) return component;
+
+    return <EuiToolTip content={integrationLink?.error}>{component}</EuiToolTip>;
+  };
+
+  return withErrorTooltip(
+    <EuiButtonEmpty
+      data-test-subj={RULE_COUNTERS_TEST_SUBJ.INTEGRATIONS_EVALUATED_BUTTON}
+      iconType="listAdd"
+      href={integrationLink?.link}
+      isDisabled={!integrationLink?.link}
+    >
+      {i18n.translate('xpack.csp.rulesCounters.accountsEvaluatedButton', {
+        defaultMessage: 'Add more {resourceName}',
+        values: {
+          resourceName: benchmarkValues.resourceName.toLowerCase(),
+        },
+      })}
+    </EuiButtonEmpty>
   );
 };

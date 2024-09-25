@@ -8,10 +8,15 @@
 import { transformError } from '@kbn/securitysolution-es-utils';
 import { CSP_GET_BENCHMARK_RULES_STATE_ROUTE_PATH } from '@kbn/cloud-security-posture-common';
 import type { CspBenchmarkRulesStates } from '@kbn/cloud-security-posture-common/schema/rules/latest';
-import { CspRouter } from '../../../types';
+import { CoreSetup } from '@kbn/core-lifecycle-server';
+import { INTERNAL_CSP_SETTINGS_SAVED_OBJECT_TYPE } from '../../../../common/constants';
+import { CspRouter, CspServerPluginStart, CspServerPluginStartDeps } from '../../../types';
 import { getCspBenchmarkRulesStatesHandler } from './v1';
 
-export const defineGetCspBenchmarkRulesStatesRoute = (router: CspRouter) =>
+export const defineGetCspBenchmarkRulesStatesRoute = (
+  router: CspRouter,
+  core: CoreSetup<CspServerPluginStartDeps, CspServerPluginStart>
+) =>
   router.versioned
     .get({
       access: 'internal',
@@ -27,12 +32,18 @@ export const defineGetCspBenchmarkRulesStatesRoute = (router: CspRouter) =>
       },
       async (context, request, response) => {
         const cspContext = await context.csp;
+        const [coreStart] = await core.getStartServices();
+        // const soClient = coreStart.savedObjects.createInternalRepository();
+        const encryptedSoClientInternal = coreStart.savedObjects.createInternalRepository([
+          INTERNAL_CSP_SETTINGS_SAVED_OBJECT_TYPE,
+        ]);
 
         try {
           const encryptedSoClient = cspContext.encryptedSavedObjects;
 
           const rulesStates: CspBenchmarkRulesStates = await getCspBenchmarkRulesStatesHandler(
-            encryptedSoClient
+            encryptedSoClientInternal,
+            encryptedSoClientInternal
           );
 
           return response.ok({

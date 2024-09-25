@@ -137,6 +137,11 @@ export const POSTURE_TYPES: { [x: string]: PostureTypes } = {
   [POSTURE_TYPE_ALL]: POSTURE_TYPE_ALL,
 };
 
+export const FINDINGS_TYPES = {
+  MISCONFIGURATION: 'misconfiguration',
+  VULNERABILITY: 'vulnerability',
+} as const;
+
 export const VULNERABILITIES_SEVERITY: Record<VulnSeverity, VulnSeverity> = {
   LOW: 'LOW',
   MEDIUM: 'MEDIUM',

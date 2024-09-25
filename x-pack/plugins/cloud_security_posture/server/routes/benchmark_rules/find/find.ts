@@ -14,13 +14,17 @@ import { findCspBenchmarkRuleRequestSchema as findCspBenchmarkRuleRequestSchemaV
 import type { FindCspBenchmarkRuleRequest as FindCspBenchmarkRuleRequestV1 } from '@kbn/cloud-security-posture-common/schema/rules/v3';
 import { findCspBenchmarkRuleRequestSchema as findCspBenchmarkRuleRequestSchemaV2 } from '@kbn/cloud-security-posture-common/schema/rules/v4';
 import type { FindCspBenchmarkRuleRequest as FindCspBenchmarkRuleRequestV2 } from '@kbn/cloud-security-posture-common/schema/rules/v4';
+import { CoreSetup } from '@kbn/core-lifecycle-server';
 import { FIND_CSP_BENCHMARK_RULE_ROUTE_PATH } from '../../../../common/constants';
-import { CspRouter } from '../../../types';
+import { CspRouter, CspServerPluginStart, CspServerPluginStartDeps } from '../../../types';
 import { findBenchmarkRuleHandler as findRuleHandlerV1 } from './v1';
 import { findBenchmarkRuleHandler as findRuleHandlerV2 } from './v2';
 import { findBenchmarkRuleHandler as findRuleHandlerV3 } from './v3';
 
-export const defineFindCspBenchmarkRuleRoute = (router: CspRouter) =>
+export const defineFindCspBenchmarkRuleRoute = (
+  router: CspRouter,
+  core: CoreSetup<CspServerPluginStartDeps, CspServerPluginStart>
+) =>
   router.versioned
     .get({
       access: 'internal',
@@ -101,9 +105,12 @@ export const defineFindCspBenchmarkRuleRoute = (router: CspRouter) =>
         const requestBody: FindCspBenchmarkRuleRequest = request.query;
         const cspContext = await context.csp;
 
+        const [coreStart] = await core.getStartServices();
+        const soClient = coreStart.savedObjects.createInternalRepository();
+
         try {
           const cspBenchmarkRules: FindCspBenchmarkRuleResponse = await findRuleHandlerV3(
-            cspContext.soClient,
+            soClient,
             requestBody
           );
 
