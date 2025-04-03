@@ -17,7 +17,7 @@ import {
 } from '@elastic/eui';
 import { BenchmarkIcons } from '../findings_flyout';
 
-interface FindingsMisconfigurationFlyoutHeaderProps {
+export interface FindingsMisconfigurationFlyoutHeaderProps {
   ruleName: string;
   timestamp?: Date;
   rulesTags?: string[];

@@ -36,11 +36,10 @@ export interface CspClientPluginSetup {}
 export interface CspClientPluginStart {
   /** Gets the cloud security posture router component for embedding in the security solution. */
   getCloudSecurityPostureRouter(): ComponentType<CspRouterProps>;
-  getCloudSecurityPostureMisconfigurationFlyout: ({
-    ruleId,
-    resourceId,
-  }: FindingMisconfigurationFlyoutProps) => React.JSX.Element;
-  getCloudSecurityPostureMisconfigurationFlyoutFull: () => { Header: React.JSX.Element };
+  getCloudSecurityPostureMisconfigurationFlyout: () => React.JSX.Element;
+  getCloudSecurityPostureMisconfigurationFlyoutFull: () => {
+    Header: (props: FindingsMisconfigurationFlyoutHeaderProps) => React.JSX.Element;
+  };
 }
 
 export interface CspClientPluginSetupDeps {
