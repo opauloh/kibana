@@ -18,27 +18,20 @@ import {
 import { BenchmarkIcons } from '../findings_flyout';
 
 export interface FindingsMisconfigurationFlyoutHeaderProps {
-  ruleName: string;
-  timestamp?: Date;
-  rulesTags?: string[];
-  resourceName?: string;
-  framework?: string[];
-  vendor?: string;
-  ruleBenchmarkId?: string;
-  ruleBenchmarkName?: string;
+  finding: any;
 }
 
 export const FindingsMisconfigurationFlyoutHeader = ({
-  ruleName,
-  timestamp,
-  rulesTags,
-  resourceName,
-  framework,
-  vendor,
-  ruleBenchmarkId,
-  ruleBenchmarkName,
+  finding,
 }: FindingsMisconfigurationFlyoutHeaderProps) => {
   const { euiTheme } = useEuiTheme();
+
+  const dateFormatted = new Date(finding?.['@timestamp'] || '');
+  const rulesTags = finding?.rule.tags;
+  const resourceName = finding?.resource.name;
+  const vendor = finding?.observer.vendor;
+  const ruleBenchmarkId = finding?.rule.benchmark.id;
+  const ruleBenchmarkName = finding?.rule.benchmark.name;
 
   return (
     <>
@@ -90,7 +83,7 @@ export const FindingsMisconfigurationFlyoutHeader = ({
                         />
                       )}
                     </EuiFlexItem>
-                    <EuiFlexItem> {framework} </EuiFlexItem>
+                    {/* <EuiFlexItem> {framework} </EuiFlexItem> */}
                   </EuiFlexGroup>
                 </EuiPanel>
               </EuiFlexItem>

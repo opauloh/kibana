@@ -233,8 +233,6 @@ export const MissingFieldsCallout = ({
   );
 };
 
-const FindingsRuleFlyoutContext = createContext<any>(null);
-
 const FindingsRuleFlyout = ({ ruleId, resourceId, children }) => {
   const { data } = useMisconfigurationFinding({
     query: createMisconfigurationFindingsQuery(resourceId, ruleId),
@@ -243,29 +241,22 @@ const FindingsRuleFlyout = ({ ruleId, resourceId, children }) => {
   });
 
   const [tab, setTab] = useState(tabs[0]);
-  const { euiTheme } = useEuiTheme();
+
   const finding = data?.result.hits[0]?._source;
 
   if (!finding) return null;
 
-  const contextValue = {
+  return children({
+    finding,
+    createRuleFn: (http) => createDetectionRuleFromBenchmarkRule(http, finding?.rule),
     tab,
     setTab,
-    finding,
     tabs,
-    euiTheme,
-    createRuleFn: (http) => createDetectionRuleFromBenchmarkRule(http, finding?.rule),
-  };
-
-  return (
-    <FindingsRuleFlyoutContext.Provider value={contextValue}>
-      <EuiPanel paddingSize="none">{children}</EuiPanel>
-    </FindingsRuleFlyoutContext.Provider>
-  );
+  });
 };
 
-const Header = () => {
-  const { tab, setTab, finding, tabs, euiTheme } = useContext(FindingsRuleFlyoutContext);
+const Header = ({ tab, setTab, finding, tabs }) => {
+  const { euiTheme } = useEuiTheme();
 
   return (
     <EuiFlyoutHeader>
@@ -318,8 +309,8 @@ const Header = () => {
   );
 };
 
-const Body = () => {
-  const { tab, finding, euiTheme } = useContext(FindingsRuleFlyoutContext);
+const Body = ({ tab, finding }) => {
+  const { euiTheme } = useEuiTheme();
 
   return (
     <EuiFlyoutBody>
@@ -333,9 +324,7 @@ const Body = () => {
   );
 };
 
-const Footer = () => {
-  const { finding, createRuleFn } = useContext(FindingsRuleFlyoutContext);
-
+const Footer = ({ finding, createRuleFn }) => {
   const convertObjectToArray = (obj) =>
     obj
       ? Object.entries(obj)

@@ -37,10 +37,8 @@ const LazyCspCustomAssets = lazy(
 export const LazyCspFindingsMisconfigurationFlyout = lazy(
   () => import('./pages/configurations/findings_flyout/findings_flyout')
 );
-export const LazyCspFindingsMisconfigurationFlyoutHeader = lazy(() =>
-  import('./pages/configurations/findings_flyout/findings_flyout').then((mod) => ({
-    default: mod.FindingsRuleFlyoutHeader,
-  }))
+export const LazyCspFindingsMisconfigurationFlyoutHeader = lazy(
+  () => import('./pages/configurations/findings_flyout/findings_right/header')
 );
 export const LazyCspFindingsMisconfigurationFlyoutBody = lazy(() =>
   import('./pages/configurations/findings_flyout/findings_flyout').then((mod) => ({
@@ -130,9 +128,9 @@ export class CspPlugin
               {props.children}
             </LazyCspFindingsMisconfigurationFlyout>
           ),
-          Header: () => <LazyCspFindingsMisconfigurationFlyoutHeader />,
-          Body: () => <LazyCspFindingsMisconfigurationFlyoutBody />,
-          Footer: () => <LazyCspFindingsMisconfigurationFlyoutFooter />,
+          Header: (props) => <LazyCspFindingsMisconfigurationFlyoutHeader {...props} />,
+          Body: (props) => <LazyCspFindingsMisconfigurationFlyoutBody {...props} />,
+          Footer: (props) => <LazyCspFindingsMisconfigurationFlyoutFooter {...props} />,
         };
       },
     };
