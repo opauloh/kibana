@@ -111,10 +111,10 @@ describe('ThreatHuntingLeadsFlyout', () => {
     expect(screen.getByText('Host server-01 with risk score 80')).toBeInTheDocument();
   });
 
-  it('renders tags as badges in list items', () => {
+  it('does not render tag badges in list items', () => {
     mockUseQuery.mockReturnValue({
       data: {
-        leads: [createApiLead({ id: 'lead-tags', tags: ['malware'] })],
+        leads: [createApiLead({ id: 'lead-tags', tags: ['malware', 'lateral-movement'] })],
         total: 1,
       },
       isLoading: false,
@@ -122,22 +122,8 @@ describe('ThreatHuntingLeadsFlyout', () => {
 
     render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
 
-    expect(screen.getByText('malware')).toBeInTheDocument();
-  });
-
-  it('shows overflow badge when tags exceed the visible limit', () => {
-    mockUseQuery.mockReturnValue({
-      data: {
-        leads: [createApiLead({ id: 'lead-tags-overflow', tags: ['malware', 'lateral-movement'] })],
-        total: 1,
-      },
-      isLoading: false,
-    });
-
-    render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
-
-    expect(screen.getByText('malware')).toBeInTheDocument();
-    expect(screen.getByText('+1')).toBeInTheDocument();
+    expect(screen.queryByText('malware')).not.toBeInTheDocument();
+    expect(screen.queryByText('lateral-movement')).not.toBeInTheDocument();
   });
 
   it('does not render timestamps on lead list items', () => {

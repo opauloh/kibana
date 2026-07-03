@@ -269,7 +269,7 @@ const groupIntoLeads = async (
     return {
       id: uuidv4(),
       title: llm.title,
-      byline: buildByline(group, allObservations),
+      byline: llm.byline?.trim() ? llm.byline : buildByline(group, allObservations),
       description: llm.description,
       entities: group.map((e) => e.entity),
       tags: llm.tags,

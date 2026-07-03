@@ -7,7 +7,6 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  EuiBadge,
   EuiFieldSearch,
   EuiFlexGroup,
   EuiFlexItem,
@@ -24,8 +23,7 @@ import { useEntityAnalyticsRoutes } from '../../../api/api';
 import type { HuntingLead } from './types';
 import { fromApiLead } from './types';
 import * as i18n from './translations';
-import { MAX_VISIBLE_TAGS } from './utils';
-import { renderTextWithEntities, TagsPopover } from './shared_lead_components';
+import { renderTextWithEntities } from './shared_lead_components';
 
 interface ThreatHuntingLeadsFlyoutProps {
   onClose: () => void;
@@ -149,23 +147,6 @@ const LeadListItem: React.FC<LeadListItemProps> = ({ lead, onClick }) => {
             {renderedByline}
           </EuiText>
         </EuiFlexItem>
-
-        {lead.tags.length > 0 && (
-          <EuiFlexItem grow={false}>
-            <EuiFlexGroup gutterSize="xs" responsive={false} wrap alignItems="center">
-              {lead.tags.slice(0, MAX_VISIBLE_TAGS).map((tag) => (
-                <EuiFlexItem grow={false} key={tag}>
-                  <EuiBadge color="hollow">{tag}</EuiBadge>
-                </EuiFlexItem>
-              ))}
-              {lead.tags.length > MAX_VISIBLE_TAGS && (
-                <EuiFlexItem grow={false}>
-                  <TagsPopover tags={lead.tags} />
-                </EuiFlexItem>
-              )}
-            </EuiFlexGroup>
-          </EuiFlexItem>
-        )}
       </EuiFlexGroup>
     </EuiPanel>
   );

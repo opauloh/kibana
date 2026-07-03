@@ -19,6 +19,7 @@ export interface ScoredEntityInput {
 
 export interface LlmSynthesisResult {
   readonly title: string;
+  readonly byline: string;
   readonly description: string;
   readonly tags: string[];
   readonly recommendations: string[];
@@ -35,6 +36,7 @@ Rules:
 You will receive data for {lead_count} lead(s). Respond ONLY with a valid JSON array (no markdown fences, no extra text) containing exactly {lead_count} objects in the same order as the input, each matching this schema:
 {{
   "title": "string - 3 to 5 words. A specific threat label, not a restatement of the rule name. Vary titles across leads — avoid repeating the same phrase. Good: 'Credential access attempt', 'Suspicious admin activity', 'Authentication bypass signal'. Bad: 'Okta MFA Verification Failure' (that is the rule name, not a title).",
+  "byline": "string - one sentence, roughly 15 to 25 words, plain text, no markdown. Start with the entity's name exactly as given in the input, then summarize what happened and the most important signal or timeframe. This is the first thing an analyst reads, so it must stand alone without the title or description. Good: 'admin-1 accessed 2 unfamiliar hosts and showed unusual account activity in the last 24h.', 'server-01 triggered 3 high-severity alerts tied to registry persistence techniques in the last 7 days.'. Bad: 'with 2 alerts in the last 7 days' (no context on what happened or why it matters).",
   "description": "string - 2 to 4 sentences, plain text, no markdown. Explain: (1) what the evidence shows, (2) why this entity specifically warrants investigation (their role, criticality, or the pattern), (3) what an attacker might be doing. Be direct and specific — name rule names, scores, counts from the data. If data is limited, explain why this signal still matters.",
   "tags": ["3 to 6 tags. Short, human-readable. Mix technique tags from rule names in the data with contextual tags like the entity's role or criticality tier. Never use MITRE IDs."],
   "recommendations": ["3 to 5 specific chat prompts an analyst pastes directly into an AI assistant. Name the entity, timeframe, and data source in each prompt. Good: 'Show me all authentication events for {{entity}} in the last 48h including source IPs and geolocations', 'Has {{entity}} accessed any new systems or services in the last 7 days that they haven't used in the past 30?'. Bad: 'Review recent activity' (too vague)."]
@@ -123,6 +125,7 @@ export const llmSynthesizeBatch = async (
   return results.map((result) => {
     if (
       typeof result.title !== 'string' ||
+      typeof result.byline !== 'string' ||
       typeof result.description !== 'string' ||
       !Array.isArray(result.tags) ||
       !Array.isArray(result.recommendations)
@@ -131,6 +134,7 @@ export const llmSynthesizeBatch = async (
     }
     return {
       title: truncateTitle(result.title, 5),
+      byline: stripMarkdown(result.byline),
       description: stripMarkdown(result.description),
       tags: result.tags
         .map(String)

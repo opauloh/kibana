@@ -70,6 +70,7 @@ describe('LeadGenerationEngine', () => {
     mockLlmSynthesizeBatch.mockImplementation(async (_model, groups) =>
       groups.map(() => ({
         title: 'LLM title',
+        byline: 'LLM byline',
         description: 'LLM description',
         tags: ['tag'],
         recommendations: ['recommendation'],
@@ -511,6 +512,7 @@ describe('LeadGenerationEngine', () => {
       mockLlmSynthesizeBatch.mockResolvedValueOnce([
         {
           title: 'LLM-generated title',
+          byline: 'alice accessed 2 unfamiliar hosts in the last 24h',
           description: 'LLM-generated description',
           tags: ['credential-access'],
           recommendations: ['Check recent logins for alice'],
@@ -528,9 +530,39 @@ describe('LeadGenerationEngine', () => {
       expect(mockLlmSynthesizeBatch).toHaveBeenCalledWith(fakeChatModel, expect.any(Array), logger);
       expect(leads).toHaveLength(1);
       expect(leads[0].title).toBe('LLM-generated title');
+      expect(leads[0].byline).toBe('alice accessed 2 unfamiliar hosts in the last 24h');
       expect(leads[0].description).toBe('LLM-generated description');
       expect(leads[0].tags).toEqual(['credential-access']);
       expect(leads[0].chatRecommendations).toEqual(['Check recent logins for alice']);
+    });
+
+    it('falls back to the templated byline when the LLM returns an empty byline', async () => {
+      const entity = createMockEntity('alice');
+      const obs = createMockObservation(entity, 'risk_analysis', {
+        score: 80,
+        confidence: 0.9,
+      });
+
+      mockLlmSynthesizeBatch.mockResolvedValueOnce([
+        {
+          title: 'LLM-generated title',
+          byline: '   ',
+          description: 'LLM-generated description',
+          tags: ['credential-access'],
+          recommendations: ['Check recent logins for alice'],
+        },
+      ]);
+
+      const engine = createLeadGenerationEngine({ logger });
+      engine.registerModule(
+        createMockModule('risk_analysis', 0.35, jest.fn().mockResolvedValue([obs]))
+      );
+
+      const leads = await engine.generateLeads([entity], { chatModel: fakeChatModel });
+
+      expect(leads).toHaveLength(1);
+      expect(leads[0].byline).toContain('alice');
+      expect(leads[0].byline).not.toBe('   ');
     });
 
     it('propagates LLM synthesis errors to the caller', async () => {
@@ -569,12 +601,14 @@ describe('LeadGenerationEngine', () => {
       mockLlmSynthesizeBatch.mockResolvedValueOnce([
         {
           title: 'Alice threat',
+          byline: 'Alice byline',
           description: 'Alice analysis',
           tags: ['tag-alice'],
           recommendations: ['Investigate alice'],
         },
         {
           title: 'Bob threat',
+          byline: 'Bob byline',
           description: 'Bob analysis',
           tags: ['tag-bob'],
           recommendations: ['Investigate bob'],

@@ -154,6 +154,7 @@ describe('llmSynthesizeBatch', () => {
     mockChainInvokeResult = [
       {
         title: 'This Is A Very Long Title That Should Be Truncated',
+        byline: 'Byline',
         description: 'Description',
         tags: ['tag'],
         recommendations: ['rec'],
@@ -166,12 +167,49 @@ describe('llmSynthesizeBatch', () => {
     expect(results[0].title).toBe('This Is A Very Long');
   });
 
+  it('throws when LLM returns malformed item with missing byline', async () => {
+    const groups: ScoredEntityInput[][] = [[createScoredEntity('alice', 8)]];
+
+    mockChainInvokeResult = [
+      {
+        title: 'Valid title',
+        description: 'No byline field',
+        tags: ['tag'],
+        recommendations: ['rec'],
+      },
+    ];
+
+    await expect(llmSynthesizeBatch(fakeChatModel, groups, logger)).rejects.toThrow(
+      /malformed JSON/
+    );
+  });
+
+  it('returns the byline and strips markdown formatting from it', async () => {
+    const groups: ScoredEntityInput[][] = [[createScoredEntity('alice', 8)]];
+
+    mockChainInvokeResult = [
+      {
+        title: 'Threat title',
+        byline: '**alice** accessed 2 unfamiliar hosts in the last 24h',
+        description: 'Description',
+        tags: ['tag'],
+        recommendations: ['rec'],
+      },
+    ];
+
+    const results = await llmSynthesizeBatch(fakeChatModel, groups, logger);
+
+    expect(results[0].byline).not.toContain('**');
+    expect(results[0].byline).toBe('alice accessed 2 unfamiliar hosts in the last 24h');
+  });
+
   it('strips markdown formatting from descriptions', async () => {
     const groups: ScoredEntityInput[][] = [[createScoredEntity('alice', 8)]];
 
     mockChainInvokeResult = [
       {
         title: 'Threat title',
+        byline: 'Byline',
         description: '**Bold text** and *italic text* with `code` and ## heading',
         tags: ['tag'],
         recommendations: ['rec'],
@@ -193,6 +231,7 @@ describe('llmSynthesizeBatch', () => {
     mockChainInvokeResult = [
       {
         title: 'Threat',
+        byline: 'Byline',
         description: 'Description',
         tags: ['Credential Access', 'T1078', 'Brute Force', 'T1110.003'],
         recommendations: ['rec'],
@@ -212,6 +251,7 @@ describe('llmSynthesizeBatch', () => {
     mockChainInvokeResult = [
       {
         title: 'Threat',
+        byline: 'Byline',
         description: 'Description',
         tags: ['t1', 't2', 't3', 't4', 't5', 't6', 't7', 't8'],
         recommendations: ['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7'],
@@ -234,18 +274,21 @@ describe('llmSynthesizeBatch', () => {
     mockChainInvokeResult = [
       {
         title: 'Alice threat',
+        byline: 'Alice byline',
         description: 'Alice desc',
         tags: ['alice-tag'],
         recommendations: ['alice-rec'],
       },
       {
         title: 'Bob threat',
+        byline: 'Bob byline',
         description: 'Bob desc',
         tags: ['bob-tag'],
         recommendations: ['bob-rec'],
       },
       {
         title: 'Carol threat',
+        byline: 'Carol byline',
         description: 'Carol desc',
         tags: ['carol-tag'],
         recommendations: ['carol-rec'],
@@ -266,6 +309,7 @@ describe('llmSynthesizeBatch', () => {
     mockChainInvokeResult = [
       {
         title: 'Threat',
+        byline: 'Byline',
         description: 'Description',
         tags: [42, true, 'valid-tag'],
         recommendations: ['rec'],
