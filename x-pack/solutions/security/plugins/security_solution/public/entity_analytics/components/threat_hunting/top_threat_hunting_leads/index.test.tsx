@@ -10,6 +10,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 
 import { TopThreatHuntingLeads } from '.';
 import type { HuntingLead, Observation } from './types';
+import type { LeadRiskScore } from './utils';
 
 jest.mock('../../../../common/lib/kibana', () => ({
   useKibana: () => ({
@@ -20,6 +21,20 @@ jest.mock('../../../../common/lib/kibana', () => ({
     },
   }),
 }));
+
+jest.mock('./use_lead_entity_risk', () => ({
+  useLeadEntityRiskScores: jest.fn(),
+}));
+
+const mockUseLeadEntityRiskScores = jest.requireMock('./use_lead_entity_risk')
+  .useLeadEntityRiskScores as jest.Mock;
+
+const setRiskScores = (entries: Array<[string, LeadRiskScore]> = []) => {
+  mockUseLeadEntityRiskScores.mockReturnValue({
+    riskByEntityId: new Map<string, LeadRiskScore>(entries),
+    isLoading: false,
+  });
+};
 
 const createMockObservation = (overrides: Partial<Observation> = {}): Observation => ({
   entityId: 'entity-1',
@@ -70,6 +85,7 @@ const defaultProps = {
 describe('TopThreatHuntingLeads', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    setRiskScores();
   });
 
   it('renders cards with mock leads data (shows card for each lead, max 5)', () => {
@@ -260,5 +276,29 @@ describe('TopThreatHuntingLeads', () => {
 
     expect(onLeadClick).toHaveBeenCalledTimes(1);
     expect(onLeadClick).toHaveBeenCalledWith(lead);
+  });
+
+  it('renders the risk badge with the formatted score from the entity store', () => {
+    setRiskScores([['host:entity-1', { score: 82, level: 'High' }]]);
+    const lead = createMockLead({
+      id: 'lead-risk',
+      observations: [createMockObservation({ entityId: 'host:entity-1' })],
+    });
+
+    render(<TopThreatHuntingLeads {...defaultProps} leads={[lead]} totalCount={1} />);
+
+    expect(screen.getByTestId('leadRiskBadge')).toHaveTextContent('82.00');
+  });
+
+  it('does not render the risk badge when the entity has no risk score in the store', () => {
+    setRiskScores();
+    const lead = createMockLead({
+      id: 'lead-no-risk',
+      observations: [createMockObservation({ entityId: 'host:entity-1' })],
+    });
+
+    render(<TopThreatHuntingLeads {...defaultProps} leads={[lead]} totalCount={1} />);
+
+    expect(screen.queryByTestId('leadRiskBadge')).not.toBeInTheDocument();
   });
 });

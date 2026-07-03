@@ -23,7 +23,9 @@ import { useEntityAnalyticsRoutes } from '../../../api/api';
 import type { HuntingLead } from './types';
 import { fromApiLead } from './types';
 import * as i18n from './translations';
-import { renderTextWithEntities } from './shared_lead_components';
+import { LeadRiskBadge, renderTextWithEntities } from './shared_lead_components';
+import { useLeadEntityRiskScores } from './use_lead_entity_risk';
+import { resolveLeadRiskScore, type LeadRiskScore } from './utils';
 
 interface ThreatHuntingLeadsFlyoutProps {
   onClose: () => void;
@@ -53,6 +55,8 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
   });
 
   const leads: HuntingLead[] = useMemo(() => data?.leads?.map(fromApiLead) ?? [], [data?.leads]);
+
+  const { riskByEntityId } = useLeadEntityRiskScores(leads);
 
   const filteredLeads = useMemo(() => {
     if (!searchQuery) return leads;
@@ -102,7 +106,11 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
             <EuiFlexGroup direction="column" gutterSize="s">
               {filteredLeads.map((lead) => (
                 <EuiFlexItem key={lead.id}>
-                  <LeadListItem lead={lead} onClick={onSelectLead} />
+                  <LeadListItem
+                    lead={lead}
+                    risk={resolveLeadRiskScore(lead, riskByEntityId)}
+                    onClick={onSelectLead}
+                  />
                 </EuiFlexItem>
               ))}
             </EuiFlexGroup>
@@ -115,10 +123,11 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
 
 interface LeadListItemProps {
   lead: HuntingLead;
+  risk?: LeadRiskScore;
   onClick: (lead: HuntingLead) => void;
 }
 
-const LeadListItem: React.FC<LeadListItemProps> = ({ lead, onClick }) => {
+const LeadListItem: React.FC<LeadListItemProps> = ({ lead, risk, onClick }) => {
   const handleClick = useCallback(() => onClick(lead), [onClick, lead]);
   const renderedByline = useMemo(
     () => renderTextWithEntities(lead.byline, lead.entities),
@@ -141,6 +150,12 @@ const LeadListItem: React.FC<LeadListItemProps> = ({ lead, onClick }) => {
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiFlexItem>
+
+        {risk && (
+          <EuiFlexItem grow={false}>
+            <LeadRiskBadge risk={risk} />
+          </EuiFlexItem>
+        )}
 
         <EuiFlexItem grow={false}>
           <EuiText size="xs" color="subdued">

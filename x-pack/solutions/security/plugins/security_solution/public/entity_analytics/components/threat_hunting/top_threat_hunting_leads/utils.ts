@@ -5,6 +5,9 @@
  * 2.0.
  */
 
+import type { RiskSeverity } from '../../../../../common/search_strategy';
+import type { HuntingLead } from './types';
+
 export const MAX_VISIBLE_TAGS = 1;
 
 export const getEntityIcon = (entityType: string): string => {
@@ -19,4 +22,51 @@ export const getEntityIcon = (entityType: string): string => {
     default:
       return 'globe';
   }
+};
+
+export interface LeadRiskScore {
+  score: number;
+  level: RiskSeverity;
+}
+
+const RISK_LEVELS: readonly RiskSeverity[] = ['Unknown', 'Low', 'Moderate', 'High', 'Critical'];
+
+/** Narrow an arbitrary value to a known risk level, defaulting to `Unknown`. */
+export const coerceRiskLevel = (value: unknown): RiskSeverity =>
+  RISK_LEVELS.includes(value as RiskSeverity) ? (value as RiskSeverity) : 'Unknown';
+
+/**
+ * Unique Entity Store EUIDs referenced by a lead. The lead's `entities` array
+ * only carries display type/name, so identity comes from the observations, each
+ * of which is keyed by the entity EUID (e.g. `host:8c67...`).
+ */
+export const getLeadEntityIds = (lead: HuntingLead): string[] => {
+  const ids = new Set<string>();
+  for (const observation of lead.observations) {
+    if (observation.entityId) {
+      ids.add(observation.entityId);
+    }
+  }
+  return [...ids];
+};
+
+/**
+ * Resolve a lead's risk from a live EUID -> risk map (fetched from the Entity
+ * Store). When a lead references multiple entities, the highest score wins.
+ * Returns `undefined` when none of the lead's entities are present in the map.
+ */
+export const resolveLeadRiskScore = (
+  lead: HuntingLead,
+  riskByEntityId: ReadonlyMap<string, LeadRiskScore>
+): LeadRiskScore | undefined => {
+  let best: LeadRiskScore | undefined;
+
+  for (const entityId of getLeadEntityIds(lead)) {
+    const risk = riskByEntityId.get(entityId);
+    if (risk && (best === undefined || risk.score > best.score)) {
+      best = risk;
+    }
+  }
+
+  return best;
 };

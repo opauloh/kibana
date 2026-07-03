@@ -10,6 +10,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 
 import { ThreatHuntingLeadsFlyout } from './threat_hunting_leads_flyout';
 import type { HuntingLead } from './types';
+import type { LeadRiskScore } from './utils';
 
 jest.mock('@kbn/react-query', () => ({
   useQuery: jest.fn(),
@@ -19,9 +20,22 @@ jest.mock('../../../api/api', () => ({
   useEntityAnalyticsRoutes: jest.fn(),
 }));
 
+jest.mock('./use_lead_entity_risk', () => ({
+  useLeadEntityRiskScores: jest.fn(),
+}));
+
 const mockUseQuery = jest.requireMock('@kbn/react-query').useQuery as jest.Mock;
 const mockUseEntityAnalyticsRoutes = jest.requireMock('../../../api/api')
   .useEntityAnalyticsRoutes as jest.Mock;
+const mockUseLeadEntityRiskScores = jest.requireMock('./use_lead_entity_risk')
+  .useLeadEntityRiskScores as jest.Mock;
+
+const setRiskScores = (entries: Array<[string, LeadRiskScore]> = []) => {
+  mockUseLeadEntityRiskScores.mockReturnValue({
+    riskByEntityId: new Map<string, LeadRiskScore>(entries),
+    isLoading: false,
+  });
+};
 
 const createMockLead = (overrides: Partial<HuntingLead> = {}): HuntingLead => ({
   id: 'lead-1',
@@ -56,6 +70,7 @@ const defaultProps = {
 describe('ThreatHuntingLeadsFlyout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    setRiskScores();
     mockUseEntityAnalyticsRoutes.mockReturnValue({ fetchLeads: jest.fn() });
     mockUseQuery.mockReturnValue({
       data: { leads: [createApiLead()], total: 1 },
@@ -139,5 +154,48 @@ describe('ThreatHuntingLeadsFlyout', () => {
 
     expect(container.textContent).not.toContain('just now');
     expect(container.textContent).not.toContain('ago');
+  });
+
+  it('renders the risk badge in list items using the entity store score', () => {
+    setRiskScores([['host:entity-1', { score: 82, level: 'High' }]]);
+    mockUseQuery.mockReturnValue({
+      data: {
+        leads: [
+          createApiLead({
+            id: 'lead-risk',
+            observations: [
+              {
+                entityId: 'host:entity-1',
+                moduleId: 'risk_analysis',
+                type: 'high_risk_score',
+                score: 82,
+                severity: 'high',
+                confidence: 0.9,
+                description: 'High risk score',
+                metadata: {},
+              },
+            ],
+          }),
+        ],
+        total: 1,
+      },
+      isLoading: false,
+    });
+
+    render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
+
+    expect(screen.getByTestId('leadRiskBadge')).toHaveTextContent('82.00');
+  });
+
+  it('does not render the risk badge when the entity has no risk score in the store', () => {
+    setRiskScores();
+    mockUseQuery.mockReturnValue({
+      data: { leads: [createApiLead({ id: 'lead-no-risk', observations: [] })], total: 1 },
+      isLoading: false,
+    });
+
+    render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
+
+    expect(screen.queryByTestId('leadRiskBadge')).not.toBeInTheDocument();
   });
 });

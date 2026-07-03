@@ -10,13 +10,34 @@ import {
   EuiBadge,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiHealth,
   EuiHorizontalRule,
   EuiIcon,
   EuiPopover,
   EuiText,
+  EuiToolTip,
 } from '@elastic/eui';
-import { TAGS_SECTION } from './translations';
-import { getEntityIcon, MAX_VISIBLE_TAGS } from './utils';
+import { formatRiskScore, RISK_SEVERITY_COLOUR } from '../../../common/utils';
+import { RiskSeverity } from '../../../../../common/search_strategy';
+import { getRiskLevelTooltip, TAGS_SECTION } from './translations';
+import { getEntityIcon, MAX_VISIBLE_TAGS, type LeadRiskScore } from './utils';
+
+export const LeadRiskBadge: React.FC<{ risk: LeadRiskScore }> = ({ risk }) => {
+  const color = RISK_SEVERITY_COLOUR[risk.level] ?? RISK_SEVERITY_COLOUR[RiskSeverity.Unknown];
+
+  return (
+    <EuiToolTip content={getRiskLevelTooltip(risk.level)}>
+      <EuiHealth
+        color={color}
+        textSize="xs"
+        className="eui-alignMiddle eui-textNoWrap"
+        data-test-subj="leadRiskBadge"
+      >
+        <strong>{formatRiskScore(risk.score)}</strong>
+      </EuiHealth>
+    </EuiToolTip>
+  );
+};
 
 export const renderTextWithEntities = (
   text: string,

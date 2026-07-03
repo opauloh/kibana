@@ -33,6 +33,8 @@ import { AiButton, AiIcon } from '@kbn/shared-ux-ai-components';
 import { useKibana } from '../../../../common/lib/kibana';
 import type { HuntingLead } from './types';
 import { LeadCard } from './lead_card';
+import { useLeadEntityRiskScores } from './use_lead_entity_risk';
+import { resolveLeadRiskScore } from './utils';
 import * as i18n from './translations';
 import illustrationGenAi from '../../../../common/images/illustration_genai_transparent_background.svg';
 
@@ -82,6 +84,8 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
+
+  const { riskByEntityId } = useLeadEntityRiskScores(leads);
 
   const [cardsContainer, setCardsContainer] = useState<HTMLDivElement | null>(null);
   const { width: containerWidth } = useResizeObserver(cardsContainer);
@@ -417,7 +421,11 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
                       maxWidth: hasFewLeads ? MAX_CARD_WIDTH : undefined,
                     }}
                   >
-                    <LeadCard lead={lead} onClick={onLeadClick} />
+                    <LeadCard
+                      lead={lead}
+                      risk={resolveLeadRiskScore(lead, riskByEntityId)}
+                      onClick={onLeadClick}
+                    />
                   </EuiFlexItem>
                 ))}
               </EuiFlexGroup>

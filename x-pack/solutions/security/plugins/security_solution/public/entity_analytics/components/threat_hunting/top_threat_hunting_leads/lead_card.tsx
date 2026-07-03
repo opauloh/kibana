@@ -6,16 +6,18 @@
  */
 
 import React, { useCallback, useMemo } from 'react';
-import { EuiCard, EuiText, EuiToolTip } from '@elastic/eui';
+import { EuiCard, EuiFlexGroup, EuiFlexItem, EuiText, EuiToolTip } from '@elastic/eui';
 import type { HuntingLead } from './types';
-import { renderTextWithEntities } from './shared_lead_components';
+import { LeadRiskBadge, renderTextWithEntities } from './shared_lead_components';
+import type { LeadRiskScore } from './utils';
 
 interface LeadCardProps {
   lead: HuntingLead;
+  risk?: LeadRiskScore;
   onClick: (lead: HuntingLead) => void;
 }
 
-export const LeadCard: React.FC<LeadCardProps> = ({ lead, onClick }) => {
+export const LeadCard: React.FC<LeadCardProps> = ({ lead, risk, onClick }) => {
   const handleClick = useCallback(() => onClick(lead), [onClick, lead]);
   const renderedByline = useMemo(
     () => renderTextWithEntities(lead.byline, lead.entities),
@@ -34,19 +36,28 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onClick }) => {
       textAlign="left"
       hasBorder={false}
       description={
-        <EuiText
-          size="xs"
-          color="subdued"
-          css={{
-            overflowWrap: 'anywhere',
-            display: '-webkit-box',
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {renderedByline}
-        </EuiText>
+        <EuiFlexGroup direction="column" gutterSize="xs">
+          {risk && (
+            <EuiFlexItem grow={false}>
+              <LeadRiskBadge risk={risk} />
+            </EuiFlexItem>
+          )}
+          <EuiFlexItem grow={false}>
+            <EuiText
+              size="xs"
+              color="subdued"
+              css={{
+                overflowWrap: 'anywhere',
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {renderedByline}
+            </EuiText>
+          </EuiFlexItem>
+        </EuiFlexGroup>
       }
       paddingSize="l"
       onClick={handleClick}

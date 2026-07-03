@@ -249,3 +249,9 @@ export const TAGS_SECTION = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.leads.tagsSection',
   { defaultMessage: 'Tags' }
 );
+
+export const getRiskLevelTooltip = (level: string) =>
+  i18n.translate('xpack.securitySolution.entityAnalytics.threatHunting.leads.riskLevelTooltip', {
+    defaultMessage: 'Risk level: {level}',
+    values: { level },
+  });
