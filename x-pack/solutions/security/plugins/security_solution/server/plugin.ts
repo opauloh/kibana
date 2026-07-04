@@ -453,6 +453,7 @@ export class Plugin implements ISecuritySolutionPlugin {
       kibanaVersion: pluginContext.env.packageInfo.version,
       experimentalFeatures,
       config: this.config,
+      ml: plugins.ml,
     });
 
     if (plugins.searchInferenceEndpoints) {

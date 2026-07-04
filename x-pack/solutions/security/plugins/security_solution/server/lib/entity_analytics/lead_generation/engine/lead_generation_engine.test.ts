@@ -8,8 +8,8 @@
 import { loggingSystemMock } from '@kbn/core/server/mocks';
 import type { InferenceChatModel } from '@kbn/inference-langchain';
 import type { LeadEntity, Observation, ObservationModule } from '../types';
-import { createLeadGenerationEngine } from './lead_generation_engine';
-import { llmSynthesizeBatch } from './llm_synthesize';
+import { createLeadGenerationEngine, computeCohortContext } from './lead_generation_engine';
+import { llmSynthesizeBatch, type ScoredEntityInput } from './llm_synthesize';
 
 jest.mock('./llm_synthesize');
 
@@ -527,7 +527,12 @@ describe('LeadGenerationEngine', () => {
       const leads = await engine.generateLeads([entity], { chatModel: fakeChatModel });
 
       expect(mockLlmSynthesizeBatch).toHaveBeenCalledTimes(1);
-      expect(mockLlmSynthesizeBatch).toHaveBeenCalledWith(fakeChatModel, expect.any(Array), logger);
+      expect(mockLlmSynthesizeBatch).toHaveBeenCalledWith(
+        fakeChatModel,
+        expect.any(Array),
+        logger,
+        expect.objectContaining({ totalCandidates: expect.any(Number) })
+      );
       expect(leads).toHaveLength(1);
       expect(leads[0].title).toBe('LLM-generated title');
       expect(leads[0].byline).toBe('alice accessed 2 unfamiliar hosts in the last 24h');
@@ -627,6 +632,85 @@ describe('LeadGenerationEngine', () => {
       const titles = leads.map((l) => l.title);
       expect(titles).toContain('Alice threat');
       expect(titles).toContain('Bob threat');
+    });
+
+    it('passes computed cohort context to the synthesis step', async () => {
+      const alice = createMockEntity('alice');
+      const bob = createMockEntity('bob');
+
+      const aliceObs = createMockObservation(alice, 'risk_analysis', {
+        type: 'risk_escalation_24h',
+        score: 90,
+      });
+      const bobObs = createMockObservation(bob, 'risk_analysis', {
+        type: 'risk_escalation_24h',
+        score: 80,
+      });
+
+      mockLlmSynthesizeBatch.mockResolvedValueOnce([
+        {
+          title: 'Alice',
+          byline: 'b',
+          description: 'd',
+          tags: ['t'],
+          recommendations: ['r'],
+        },
+        { title: 'Bob', byline: 'b', description: 'd', tags: ['t'], recommendations: ['r'] },
+      ]);
+
+      const engine = createLeadGenerationEngine({ logger });
+      engine.registerModule(
+        createMockModule('risk_analysis', 0.9, jest.fn().mockResolvedValue([aliceObs, bobObs]))
+      );
+
+      await engine.generateLeads([alice, bob], { chatModel: fakeChatModel });
+
+      const cohortArg = mockLlmSynthesizeBatch.mock.calls[0][3];
+      expect(cohortArg).toEqual({
+        totalCandidates: 2,
+        entityCountByObservationType: { risk_escalation_24h: 2 },
+      });
+    });
+  });
+});
+
+describe('computeCohortContext', () => {
+  const scored = (id: string, types: string[]): ScoredEntityInput => ({
+    entity: { id, type: 'user', name: id, record: {} as ScoredEntityInput['entity']['record'] },
+    priority: 5,
+    observations: types.map((type) => ({
+      entityId: id,
+      moduleId: 'm',
+      type,
+      score: 50,
+      severity: 'medium',
+      confidence: 0.7,
+      description: 'd',
+      metadata: {},
+    })),
+  });
+
+  it('counts each entity once per observation type', () => {
+    const groups: ScoredEntityInput[][] = [
+      [scored('user:a', ['risk_escalation_24h', 'risk_escalation_24h', 'ml_anomaly'])],
+      [scored('user:b', ['risk_escalation_24h'])],
+      [scored('user:c', ['governance_gap'])],
+    ];
+
+    expect(computeCohortContext(groups)).toEqual({
+      totalCandidates: 3,
+      entityCountByObservationType: {
+        risk_escalation_24h: 2,
+        ml_anomaly: 1,
+        governance_gap: 1,
+      },
+    });
+  });
+
+  it('returns zero candidates and no signals for an empty batch', () => {
+    expect(computeCohortContext([])).toEqual({
+      totalCandidates: 0,
+      entityCountByObservationType: {},
     });
   });
 });

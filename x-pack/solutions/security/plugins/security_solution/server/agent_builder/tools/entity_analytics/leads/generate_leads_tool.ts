@@ -18,6 +18,7 @@ import { RiskScoreDataClient } from '../../../../lib/entity_analytics/risk_score
 import type { ExperimentalFeatures } from '../../../../../common';
 import type {
   SecuritySolutionPluginCoreSetupDependencies,
+  SetupPlugins,
   StartPlugins,
 } from '../../../../plugin_contract';
 import { getLeadToolAvailability } from './lead_availability';
@@ -90,7 +91,8 @@ export const generateLeadsTool = (
   core: SecuritySolutionPluginCoreSetupDependencies,
   logger: Logger,
   experimentalFeatures: ExperimentalFeatures,
-  getStartServices: StartServicesAccessor<StartPlugins>
+  getStartServices: StartServicesAccessor<StartPlugins>,
+  ml: SetupPlugins['ml']
 ): BuiltinToolDefinition<typeof schema> => {
   return {
     id: SECURITY_GENERATE_LEADS_TOOL_ID,
@@ -228,6 +230,9 @@ export const generateLeadsTool = (
             sourceType: 'adhoc',
             analytics: coreStart.analytics,
             chatModel,
+            ml,
+            request,
+            soClient: savedObjectsClient,
           },
         });
 

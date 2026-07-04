@@ -77,7 +77,7 @@ export const registerTools = async (
   if (experimentalFeatures.leadGenerationEnabled) {
     agentBuilder.tools.register(listLeadsTool(core, logger, experimentalFeatures));
     agentBuilder.tools.register(
-      generateLeadsTool(core, logger, experimentalFeatures, rulePreviewDeps.getStartServices)
+      generateLeadsTool(core, logger, experimentalFeatures, rulePreviewDeps.getStartServices, ml)
     );
     agentBuilder.tools.register(dismissLeadTool(core, logger, experimentalFeatures));
   }

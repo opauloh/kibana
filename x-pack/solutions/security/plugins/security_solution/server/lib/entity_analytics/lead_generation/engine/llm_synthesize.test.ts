@@ -148,12 +148,12 @@ describe('llmSynthesizeBatch', () => {
     );
   });
 
-  it('truncates titles longer than 5 words', async () => {
+  it('truncates titles longer than 10 words', async () => {
     const groups: ScoredEntityInput[][] = [[createScoredEntity('alice', 8)]];
 
     mockChainInvokeResult = [
       {
-        title: 'This Is A Very Long Title That Should Be Truncated',
+        title: 'This Is A Very Long Title That Should Definitely Be Truncated Now',
         byline: 'Byline',
         description: 'Description',
         tags: ['tag'],
@@ -163,8 +163,51 @@ describe('llmSynthesizeBatch', () => {
 
     const results = await llmSynthesizeBatch(fakeChatModel, groups, logger);
 
-    expect(results[0].title.split(/\s+/).length).toBeLessThanOrEqual(5);
-    expect(results[0].title).toBe('This Is A Very Long');
+    expect(results[0].title.split(/\s+/).length).toBeLessThanOrEqual(10);
+    expect(results[0].title).toBe('This Is A Very Long Title That Should Definitely Be');
+  });
+
+  it('keeps hypothesis-style titles up to 9 words intact', async () => {
+    const groups: ScoredEntityInput[][] = [[createScoredEntity('alice', 8)]];
+
+    mockChainInvokeResult = [
+      {
+        title: 'Rapid risk score escalation across privileged admin account',
+        byline: 'Byline',
+        description: 'Description',
+        tags: ['tag'],
+        recommendations: ['rec'],
+      },
+    ];
+
+    const results = await llmSynthesizeBatch(fakeChatModel, groups, logger);
+
+    expect(results[0].title).toBe('Rapid risk score escalation across privileged admin account');
+  });
+
+  it('renders peer context in the payload when cohort is provided', async () => {
+    const groups: ScoredEntityInput[][] = [
+      [createScoredEntity('alice', 8, [{ type: 'risk_escalation_24h' }])],
+    ];
+
+    mockChainInvokeResult = [
+      {
+        title: 'Threat',
+        byline: 'Byline',
+        description: 'Description',
+        tags: ['tag'],
+        recommendations: ['rec'],
+      },
+    ];
+
+    const results = await llmSynthesizeBatch(fakeChatModel, groups, logger, {
+      totalCandidates: 6,
+      entityCountByObservationType: { risk_escalation_24h: 5 },
+    });
+
+    // The call must still succeed and return the synthesized lead.
+    expect(results).toHaveLength(1);
+    expect(results[0].title).toBe('Threat');
   });
 
   it('throws when LLM returns malformed item with missing byline', async () => {
