@@ -13,6 +13,7 @@ import {
   EuiFlyoutBody,
   EuiFlyoutHeader,
   EuiFlyoutResizable,
+  EuiHorizontalRule,
   EuiPanel,
   EuiSpacer,
   EuiText,
@@ -157,10 +158,10 @@ const LeadListItem: React.FC<LeadListItemProps> = ({ lead, risk, onClick }) => {
           </EuiFlexItem>
         )}
 
+        {risk && <EuiHorizontalRule margin="s" />}
+
         <EuiFlexItem grow={false}>
-          <EuiText size="xs" color="subdued">
-            {renderedByline}
-          </EuiText>
+          <EuiText size="xs">{renderedByline}</EuiText>
         </EuiFlexItem>
       </EuiFlexGroup>
     </EuiPanel>

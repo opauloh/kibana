@@ -10,16 +10,16 @@ import {
   EuiBadge,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiHealth,
   EuiHorizontalRule,
   EuiIcon,
   EuiPopover,
   EuiText,
   EuiToolTip,
+  useEuiTheme,
 } from '@elastic/eui';
+import { css } from '@emotion/react';
 import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
-import { formatRiskScore, RISK_SEVERITY_COLOUR } from '../../../common/utils';
-import { RiskSeverity } from '../../../../../common/search_strategy';
+import { RiskScoreCell } from '../../home/entities_table/risk_score_cell';
 import { EntityType } from '../../../../../common/entity_analytics/types';
 import {
   EntityPanelKeyByType,
@@ -28,22 +28,11 @@ import {
 import { getOpenEntityFlyoutLabel, getRiskLevelTooltip, TAGS_SECTION } from './translations';
 import { getEntityIcon, MAX_VISIBLE_TAGS, type LeadRiskScore } from './utils';
 
-export const LeadRiskBadge: React.FC<{ risk: LeadRiskScore }> = ({ risk }) => {
-  const color = RISK_SEVERITY_COLOUR[risk.level] ?? RISK_SEVERITY_COLOUR[RiskSeverity.Unknown];
-
-  return (
-    <EuiToolTip content={getRiskLevelTooltip(risk.level)}>
-      <EuiHealth
-        color={color}
-        textSize="xs"
-        className="eui-alignMiddle eui-textNoWrap"
-        data-test-subj="leadRiskBadge"
-      >
-        <strong>{formatRiskScore(risk.score)}</strong>
-      </EuiHealth>
-    </EuiToolTip>
-  );
-};
+export const LeadRiskBadge: React.FC<{ risk: LeadRiskScore }> = ({ risk }) => (
+  <EuiToolTip content={getRiskLevelTooltip(risk.level)}>
+    <RiskScoreCell riskScore={risk.score} data-test-subj="leadRiskBadge" />
+  </EuiToolTip>
+);
 
 const isKnownEntityType = (type: string): type is EntityType =>
   (Object.values(EntityType) as string[]).includes(type);
@@ -61,11 +50,19 @@ interface EntityBadgeProps {
  */
 export const EntityBadge: React.FC<EntityBadgeProps> = ({ entity, scopeId }) => {
   const { openFlyout } = useExpandableFlyoutApi();
+  const { euiTheme } = useEuiTheme();
 
   const badgeContent = (
     <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false} component="span">
       <EuiIcon type={getEntityIcon(entity.type)} size="s" aria-hidden={true} />
-      <span>{entity.name}</span>
+      <span
+        css={css`
+          color: ${euiTheme.colors.textPrimary};
+          font-weight: ${euiTheme.font.weight.medium};
+        `}
+      >
+        {entity.name}
+      </span>
     </EuiFlexGroup>
   );
 

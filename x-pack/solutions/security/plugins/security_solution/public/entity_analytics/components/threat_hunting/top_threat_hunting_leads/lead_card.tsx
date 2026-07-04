@@ -6,7 +6,14 @@
  */
 
 import React, { useCallback, useMemo } from 'react';
-import { EuiCard, EuiFlexGroup, EuiFlexItem, EuiText, EuiToolTip } from '@elastic/eui';
+import {
+  EuiCard,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiHorizontalRule,
+  EuiText,
+  EuiToolTip,
+} from '@elastic/eui';
 import type { HuntingLead } from './types';
 import { LeadRiskBadge, renderTextWithEntities } from './shared_lead_components';
 import { THREAT_HUNTING_LEADS_SCOPE_ID, type LeadRiskScore } from './utils';
@@ -35,31 +42,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, risk, onClick }) => {
       titleSize="xs"
       textAlign="left"
       hasBorder={false}
-      description={
-        <EuiFlexGroup direction="column" gutterSize="xs">
-          {risk && (
-            <EuiFlexItem grow={false}>
-              <LeadRiskBadge risk={risk} />
-            </EuiFlexItem>
-          )}
-          <EuiFlexItem grow={false}>
-            <EuiText
-              size="xs"
-              color="subdued"
-              css={{
-                overflowWrap: 'anywhere',
-                display: '-webkit-box',
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {renderedByline}
-            </EuiText>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      }
-      paddingSize="l"
+      paddingSize="m"
       onClick={handleClick}
       data-test-subj={`leadCard-${lead.id}`}
       css={{
@@ -67,6 +50,31 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, risk, onClick }) => {
         maxWidth: 480,
         '.euiCard__titleButton': { maxWidth: '100%' },
       }}
-    />
+    >
+      <EuiFlexGroup direction="column" gutterSize="none">
+        {risk && (
+          <>
+            <EuiFlexItem grow={false}>
+              <LeadRiskBadge risk={risk} />
+            </EuiFlexItem>
+            <EuiHorizontalRule margin="s" />
+          </>
+        )}
+        <EuiFlexItem grow={false}>
+          <EuiText
+            size="xs"
+            css={{
+              overflowWrap: 'anywhere',
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {renderedByline}
+          </EuiText>
+        </EuiFlexItem>
+      </EuiFlexGroup>
+    </EuiCard>
   );
 };

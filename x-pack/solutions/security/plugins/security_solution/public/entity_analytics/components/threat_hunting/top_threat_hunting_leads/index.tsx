@@ -25,6 +25,7 @@ import {
   EuiTitle,
   EuiToolTip,
   EuiBetaBadge,
+  useEuiTheme,
   useResizeObserver,
 } from '@elastic/eui';
 import { ConnectorSelectorInline } from '@kbn/elastic-assistant';
@@ -84,6 +85,7 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
+  const { euiTheme } = useEuiTheme();
 
   const { riskByEntityId } = useLeadEntityRiskScores(leads);
 
@@ -405,7 +407,14 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
               )}
             </EuiPanel>
           ) : (
-            <div ref={setCardsContainer} style={{ overflow: 'hidden', padding: 16, margin: -8 }}>
+            <div
+              ref={setCardsContainer}
+              style={{
+                overflow: 'hidden',
+                padding: euiTheme.size.base,
+                margin: `-${euiTheme.size.s}`,
+              }}
+            >
               <EuiFlexGroup
                 gutterSize="m"
                 responsive={false}
