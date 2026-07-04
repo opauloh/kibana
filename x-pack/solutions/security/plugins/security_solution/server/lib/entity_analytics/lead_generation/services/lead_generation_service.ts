@@ -92,7 +92,7 @@ export const formatLeadForResponse = (lead: Lead, executionId: string) => ({
   title: lead.title,
   byline: lead.byline,
   description: lead.description,
-  entities: lead.entities.map(({ type, name }) => ({ type, name })),
+  entities: lead.entities.map(({ type, name, id }) => ({ type, name, id })),
   tags: lead.tags,
   priority: lead.priority,
   staleness: lead.staleness,

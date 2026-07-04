@@ -25,7 +25,7 @@ import { fromApiLead } from './types';
 import * as i18n from './translations';
 import { LeadRiskBadge, renderTextWithEntities } from './shared_lead_components';
 import { useLeadEntityRiskScores } from './use_lead_entity_risk';
-import { resolveLeadRiskScore, type LeadRiskScore } from './utils';
+import { resolveLeadRiskScore, THREAT_HUNTING_LEADS_SCOPE_ID, type LeadRiskScore } from './utils';
 
 interface ThreatHuntingLeadsFlyoutProps {
   onClose: () => void;
@@ -130,7 +130,7 @@ interface LeadListItemProps {
 const LeadListItem: React.FC<LeadListItemProps> = ({ lead, risk, onClick }) => {
   const handleClick = useCallback(() => onClick(lead), [onClick, lead]);
   const renderedByline = useMemo(
-    () => renderTextWithEntities(lead.byline, lead.entities),
+    () => renderTextWithEntities(lead.byline, lead.entities, THREAT_HUNTING_LEADS_SCOPE_ID),
     [lead.byline, lead.entities]
   );
   return (

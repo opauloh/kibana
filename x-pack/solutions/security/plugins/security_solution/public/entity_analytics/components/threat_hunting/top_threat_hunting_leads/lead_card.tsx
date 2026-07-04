@@ -9,7 +9,7 @@ import React, { useCallback, useMemo } from 'react';
 import { EuiCard, EuiFlexGroup, EuiFlexItem, EuiText, EuiToolTip } from '@elastic/eui';
 import type { HuntingLead } from './types';
 import { LeadRiskBadge, renderTextWithEntities } from './shared_lead_components';
-import type { LeadRiskScore } from './utils';
+import { THREAT_HUNTING_LEADS_SCOPE_ID, type LeadRiskScore } from './utils';
 
 interface LeadCardProps {
   lead: HuntingLead;
@@ -20,7 +20,7 @@ interface LeadCardProps {
 export const LeadCard: React.FC<LeadCardProps> = ({ lead, risk, onClick }) => {
   const handleClick = useCallback(() => onClick(lead), [onClick, lead]);
   const renderedByline = useMemo(
-    () => renderTextWithEntities(lead.byline, lead.entities),
+    () => renderTextWithEntities(lead.byline, lead.entities, THREAT_HUNTING_LEADS_SCOPE_ID),
     [lead.byline, lead.entities]
   );
 

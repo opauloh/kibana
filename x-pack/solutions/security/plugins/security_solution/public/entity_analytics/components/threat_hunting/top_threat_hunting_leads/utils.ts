@@ -10,6 +10,13 @@ import type { HuntingLead } from './types';
 
 export const MAX_VISIBLE_TAGS = 1;
 
+/**
+ * Scope/context id used when opening an entity flyout from a hunting lead
+ * badge, so the flyout's own state doesn't collide with other entity flyout
+ * consumers on the page (e.g. the entities table).
+ */
+export const THREAT_HUNTING_LEADS_SCOPE_ID = 'entity-analytics-threat-hunting-leads';
+
 export const getEntityIcon = (entityType: string): string => {
   switch (entityType) {
     case 'user':

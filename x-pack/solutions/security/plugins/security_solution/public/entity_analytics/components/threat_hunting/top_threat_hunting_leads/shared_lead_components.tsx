@@ -17,9 +17,15 @@ import {
   EuiText,
   EuiToolTip,
 } from '@elastic/eui';
+import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
 import { formatRiskScore, RISK_SEVERITY_COLOUR } from '../../../common/utils';
 import { RiskSeverity } from '../../../../../common/search_strategy';
-import { getRiskLevelTooltip, TAGS_SECTION } from './translations';
+import { EntityType } from '../../../../../common/entity_analytics/types';
+import {
+  EntityPanelKeyByType,
+  EntityPanelParamByType,
+} from '../../../../flyout/entity_details/shared/constants';
+import { getOpenEntityFlyoutLabel, getRiskLevelTooltip, TAGS_SECTION } from './translations';
 import { getEntityIcon, MAX_VISIBLE_TAGS, type LeadRiskScore } from './utils';
 
 export const LeadRiskBadge: React.FC<{ risk: LeadRiskScore }> = ({ risk }) => {
@@ -39,16 +45,100 @@ export const LeadRiskBadge: React.FC<{ risk: LeadRiskScore }> = ({ risk }) => {
   );
 };
 
+const isKnownEntityType = (type: string): type is EntityType =>
+  (Object.values(EntityType) as string[]).includes(type);
+
+interface EntityBadgeProps {
+  entity: { type: string; name: string; id?: string };
+  scopeId: string;
+}
+
+/**
+ * Renders an entity's name/type as a badge. When the entity type maps to a
+ * known entity flyout panel, clicking the badge opens that entity's flyout
+ * instead of triggering the surrounding card's click handler (e.g. opening
+ * the Agent Builder chat).
+ */
+export const EntityBadge: React.FC<EntityBadgeProps> = ({ entity, scopeId }) => {
+  const { openFlyout } = useExpandableFlyoutApi();
+
+  const badgeContent = (
+    <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false} component="span">
+      <EuiIcon type={getEntityIcon(entity.type)} size="s" aria-hidden={true} />
+      <span>{entity.name}</span>
+    </EuiFlexGroup>
+  );
+
+  if (!isKnownEntityType(entity.type)) {
+    return <EuiBadge color="hollow">{badgeContent}</EuiBadge>;
+  }
+
+  const panelKey = EntityPanelKeyByType[entity.type];
+  const panelParam = EntityPanelParamByType[entity.type];
+
+  if (!panelKey || !panelParam) {
+    return <EuiBadge color="hollow">{badgeContent}</EuiBadge>;
+  }
+
+  // Prefer the real Entity Store EUID (e.g. `host:8c67cb16-...`) so the
+  // flyout resolves the entity directly by id. Older leads persisted before
+  // this field existed fall back to `type:name`, which is only correct when
+  // the display name happens to be the entity's raw id (e.g. hosts without a
+  // friendly name) — best-effort, but strictly better than a name-only match.
+  const entityId = entity.id ?? `${entity.type}:${entity.name}`;
+
+  const openEntityFlyout = () => {
+    openFlyout({
+      right: {
+        id: panelKey,
+        params: {
+          [panelParam]: entity.name,
+          entityId,
+          contextID: scopeId,
+          scopeId,
+        },
+      },
+    });
+  };
+
+  // Rendered as a `span[role=button]` (rather than passing `onClick` to
+  // `EuiBadge`, which would render a nested `<button>`) since these badges
+  // sit inside other clickable elements (cards/panels) that are themselves
+  // rendered as `<button>`, and nested buttons are invalid HTML.
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      aria-label={getOpenEntityFlyoutLabel(entity.name)}
+      data-test-subj={`leadEntityBadge-${entity.name}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        openEntityFlyout();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          openEntityFlyout();
+        }
+      }}
+    >
+      <EuiBadge color="hollow">{badgeContent}</EuiBadge>
+    </span>
+  );
+};
+
 export const renderTextWithEntities = (
   text: string,
-  entities: Array<{ type: string; name: string }>
+  entities: Array<{ type: string; name: string; id?: string }>,
+  scopeId: string
 ): React.ReactNode => {
   if (!entities.length) return text;
 
   interface Match {
     start: number;
     end: number;
-    entity: { type: string; name: string };
+    entity: { type: string; name: string; id?: string };
   }
   const matches: Match[] = [];
 
@@ -78,12 +168,7 @@ export const renderTextWithEntities = (
         parts.push(text.slice(lastEnd, match.start));
       }
       parts.push(
-        <EuiBadge color="hollow" key={`entity-${match.start}`}>
-          <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false} component="span">
-            <EuiIcon type={getEntityIcon(match.entity.type)} size="s" aria-hidden={true} />
-            <span>{match.entity.name}</span>
-          </EuiFlexGroup>
-        </EuiBadge>
+        <EntityBadge entity={match.entity} scopeId={scopeId} key={`entity-${match.start}`} />
       );
       lastEnd = match.end;
     }

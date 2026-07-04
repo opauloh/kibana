@@ -26,6 +26,13 @@ jest.mock('./use_lead_entity_risk', () => ({
   useLeadEntityRiskScores: jest.fn(),
 }));
 
+const mockOpenFlyout = jest.fn();
+jest.mock('@kbn/expandable-flyout', () => ({
+  useExpandableFlyoutApi: () => ({
+    openFlyout: mockOpenFlyout,
+  }),
+}));
+
 const mockUseLeadEntityRiskScores = jest.requireMock('./use_lead_entity_risk')
   .useLeadEntityRiskScores as jest.Mock;
 
@@ -274,6 +281,107 @@ describe('TopThreatHuntingLeads', () => {
 
     fireEvent.click(screen.getByTestId('leadCard-lead-xyz'));
 
+    expect(onLeadClick).toHaveBeenCalledTimes(1);
+    expect(onLeadClick).toHaveBeenCalledWith(lead);
+  });
+
+  it('clicking an entity badge opens the entity flyout and does not trigger onLeadClick', () => {
+    const onLeadClick = jest.fn();
+    const lead = createMockLead({
+      id: 'lead-badge',
+      byline: 'User admin@example.com on host server-01',
+      entities: [{ type: 'user', name: 'admin@example.com' }],
+    });
+
+    render(
+      <TopThreatHuntingLeads
+        {...defaultProps}
+        leads={[lead]}
+        totalCount={1}
+        onLeadClick={onLeadClick}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('leadEntityBadge-admin@example.com'));
+
+    expect(mockOpenFlyout).toHaveBeenCalledTimes(1);
+    expect(mockOpenFlyout).toHaveBeenCalledWith({
+      right: {
+        id: 'user-panel',
+        params: {
+          userName: 'admin@example.com',
+          // No real entity id on this lead, so it falls back to `type:name`.
+          entityId: 'user:admin@example.com',
+          contextID: 'entity-analytics-threat-hunting-leads',
+          scopeId: 'entity-analytics-threat-hunting-leads',
+        },
+      },
+    });
+    expect(onLeadClick).not.toHaveBeenCalled();
+  });
+
+  it('opens the entity flyout using the real entity id (EUID) when the lead entity carries one, instead of the display name', () => {
+    const onLeadClick = jest.fn();
+    const lead = createMockLead({
+      id: 'lead-euid',
+      byline: 'Host 8c67cb16-b7f2-4052-82f9-6edb87bb63ef triggered an alert',
+      entities: [
+        {
+          type: 'host',
+          name: '8c67cb16-b7f2-4052-82f9-6edb87bb63ef',
+          id: 'host:8c67cb16-b7f2-4052-82f9-6edb87bb63ef',
+        },
+      ],
+    });
+
+    render(
+      <TopThreatHuntingLeads
+        {...defaultProps}
+        leads={[lead]}
+        totalCount={1}
+        onLeadClick={onLeadClick}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('leadEntityBadge-8c67cb16-b7f2-4052-82f9-6edb87bb63ef'));
+
+    expect(mockOpenFlyout).toHaveBeenCalledTimes(1);
+    expect(mockOpenFlyout).toHaveBeenCalledWith({
+      right: {
+        id: 'host-panel',
+        params: {
+          hostName: '8c67cb16-b7f2-4052-82f9-6edb87bb63ef',
+          entityId: 'host:8c67cb16-b7f2-4052-82f9-6edb87bb63ef',
+          contextID: 'entity-analytics-threat-hunting-leads',
+          scopeId: 'entity-analytics-threat-hunting-leads',
+        },
+      },
+    });
+    expect(onLeadClick).not.toHaveBeenCalled();
+  });
+
+  it('renders a non-interactive badge for entities with an unrecognized type, and clicking it still opens the card (Agent Builder)', () => {
+    const onLeadClick = jest.fn();
+    const lead = createMockLead({
+      id: 'lead-generic',
+      byline: 'Service payment-api on host server-01',
+      entities: [{ type: 'generic', name: 'payment-api' }],
+    });
+
+    render(
+      <TopThreatHuntingLeads
+        {...defaultProps}
+        leads={[lead]}
+        totalCount={1}
+        onLeadClick={onLeadClick}
+      />
+    );
+
+    expect(screen.queryByTestId('leadEntityBadge-payment-api')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('payment-api'));
+
+    expect(mockOpenFlyout).not.toHaveBeenCalled();
     expect(onLeadClick).toHaveBeenCalledTimes(1);
     expect(onLeadClick).toHaveBeenCalledWith(lead);
   });

@@ -255,3 +255,9 @@ export const getRiskLevelTooltip = (level: string) =>
     defaultMessage: 'Risk level: {level}',
     values: { level },
   });
+
+export const getOpenEntityFlyoutLabel = (name: string) =>
+  i18n.translate('xpack.securitySolution.entityAnalytics.threatHunting.leads.openEntityFlyout', {
+    defaultMessage: 'Open details for {name}',
+    values: { name },
+  });

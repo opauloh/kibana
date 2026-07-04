@@ -47,6 +47,13 @@ export type Observation = z.infer<typeof observationSchema>;
 export const leadEntitySchema = z.object({
   type: z.string(),
   name: z.string(),
+  /**
+   * Entity Store unique identifier (EUID, e.g. `"host:8c67cb16-..."`). Used to
+   * open the correct entity flyout by id rather than by (potentially
+   * ambiguous) display name. Optional for backwards compatibility with leads
+   * persisted before this field was introduced.
+   */
+  id: z.string().optional(),
 });
 
 export type LeadEntity = z.infer<typeof leadEntitySchema>;
