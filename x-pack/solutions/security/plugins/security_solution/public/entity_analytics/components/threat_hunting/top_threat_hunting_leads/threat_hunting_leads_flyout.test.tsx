@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 import { ThreatHuntingLeadsFlyout } from './threat_hunting_leads_flyout';
 import type { HuntingLead } from './types';
@@ -28,6 +28,22 @@ const mockOpenFlyout = jest.fn();
 jest.mock('@kbn/expandable-flyout', () => ({
   useExpandableFlyoutApi: () => ({
     openFlyout: mockOpenFlyout,
+  }),
+}));
+
+const mockGetRedirectUrl = jest.fn().mockResolvedValue('https://kibana.test/app/discover#/');
+const mockLocatorsGet = jest.fn().mockReturnValue({ getRedirectUrl: mockGetRedirectUrl });
+jest.mock('../../../../common/lib/kibana', () => ({
+  useKibana: () => ({
+    services: {
+      share: {
+        url: {
+          locators: {
+            get: mockLocatorsGet,
+          },
+        },
+      },
+    },
   }),
 }));
 
@@ -281,5 +297,56 @@ describe('ThreatHuntingLeadsFlyout', () => {
     render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
 
     expect(screen.queryByTestId('leadRiskBadge')).not.toBeInTheDocument();
+  });
+
+  it('renders a skeleton while leads are loading', () => {
+    mockUseQuery.mockReturnValue({ data: undefined, isLoading: true });
+
+    render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
+
+    expect(screen.getByTestId('leadsFlyoutLoadingSkeleton')).toBeInTheDocument();
+    expect(screen.queryByTestId('leadListItem-lead-1')).not.toBeInTheDocument();
+  });
+
+  it('displays the generation timestamp when lastRunTimestamp is provided', () => {
+    render(
+      <ThreatHuntingLeadsFlyout {...defaultProps} lastRunTimestamp="2026-03-13T14:30:00.000Z" />
+    );
+
+    expect(screen.getByTestId('leadsFlyoutGeneratedTimestamp')).toBeInTheDocument();
+  });
+
+  it('does not display the generation timestamp when lastRunTimestamp is absent', () => {
+    render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
+
+    expect(screen.queryByTestId('leadsFlyoutGeneratedTimestamp')).not.toBeInTheDocument();
+  });
+
+  it('opens the leads archive index in Discover when the link is clicked', async () => {
+    const openSpy = jest.spyOn(window, 'open').mockImplementation();
+
+    render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
+
+    fireEvent.click(screen.getByTestId('viewLeadsArchiveIndexButton'));
+
+    expect(mockLocatorsGet).toHaveBeenCalledWith('DISCOVER_APP_LOCATOR');
+    await waitFor(() => expect(mockGetRedirectUrl).toHaveBeenCalled());
+    expect(mockGetRedirectUrl).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dataViewSpec: expect.objectContaining({
+          title: '.entity_analytics.entity-leads-*',
+          allowHidden: true,
+        }),
+      })
+    );
+    await waitFor(() =>
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://kibana.test/app/discover#/',
+        '_blank',
+        'noopener,noreferrer'
+      )
+    );
+
+    openSpy.mockRestore();
   });
 });

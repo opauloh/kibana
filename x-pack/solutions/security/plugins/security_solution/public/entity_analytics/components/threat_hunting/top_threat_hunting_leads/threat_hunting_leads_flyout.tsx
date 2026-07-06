@@ -7,6 +7,7 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  EuiButtonEmpty,
   EuiFieldSearch,
   EuiFlexGroup,
   EuiFlexItem,
@@ -15,11 +16,16 @@ import {
   EuiFlyoutResizable,
   EuiHorizontalRule,
   EuiPanel,
+  EuiSkeletonRectangle,
+  EuiSkeletonText,
+  EuiSkeletonTitle,
   EuiSpacer,
   EuiText,
   EuiTitle,
 } from '@elastic/eui';
 import { useQuery } from '@kbn/react-query';
+import { LEADS_INDEX_PATTERN } from '../../../../../common/entity_analytics/lead_generation/constants';
+import { useKibana } from '../../../../common/lib/kibana';
 import { useEntityAnalyticsRoutes } from '../../../api/api';
 import type { HuntingLead } from './types';
 import { fromApiLead } from './types';
@@ -31,15 +37,35 @@ import { resolveLeadRiskScore, THREAT_HUNTING_LEADS_SCOPE_ID, type LeadRiskScore
 interface ThreatHuntingLeadsFlyoutProps {
   onClose: () => void;
   onSelectLead: (lead: HuntingLead) => void;
+  lastRunTimestamp?: string | null;
 }
 
 export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> = ({
   onClose,
   onSelectLead,
+  lastRunTimestamp,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { fetchLeads } = useEntityAnalyticsRoutes();
+  const { share } = useKibana().services;
+
+  const handleViewLeadsArchiveIndex = useCallback(async () => {
+    const discoverLocator = share?.url.locators.get('DISCOVER_APP_LOCATOR');
+    if (!discoverLocator) return;
+
+    const url = await discoverLocator.getRedirectUrl({
+      dataViewSpec: {
+        id: 'entity-analytics-threat-hunting-leads-archive',
+        title: LEADS_INDEX_PATTERN,
+        allowHidden: true,
+      },
+    });
+
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }, [share]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['hunting-leads-flyout'],
@@ -57,7 +83,7 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
 
   const leads: HuntingLead[] = useMemo(() => data?.leads?.map(fromApiLead) ?? [], [data?.leads]);
 
-  const { riskByEntityId } = useLeadEntityRiskScores(leads);
+  const { riskByEntityId, isLoading: isRiskLoading } = useLeadEntityRiskScores(leads);
 
   const filteredLeads = useMemo(() => {
     if (!searchQuery) return leads;
@@ -86,6 +112,27 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
         <EuiText size="s" color="subdued">
           {i18n.ALL_HUNTING_LEADS_DESCRIPTION}
         </EuiText>
+        <EuiSpacer size="s" />
+        <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} wrap>
+          {lastRunTimestamp && (
+            <EuiFlexItem grow={false}>
+              <EuiText size="xs" color="subdued" data-test-subj="leadsFlyoutGeneratedTimestamp">
+                {i18n.getGeneratedOnLabel(lastRunTimestamp)}
+              </EuiText>
+            </EuiFlexItem>
+          )}
+          <EuiFlexItem grow={false}>
+            <EuiButtonEmpty
+              size="xs"
+              iconType="discoverApp"
+              flush="left"
+              onClick={handleViewLeadsArchiveIndex}
+              data-test-subj="viewLeadsArchiveIndexButton"
+            >
+              {i18n.VIEW_LEADS_ARCHIVE_INDEX}
+            </EuiButtonEmpty>
+          </EuiFlexItem>
+        </EuiFlexGroup>
       </EuiFlyoutHeader>
 
       <EuiFlyoutBody>
@@ -99,9 +146,23 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
         <EuiSpacer size="m" />
 
         {isLoading ? (
-          <EuiText textAlign="center" color="subdued">
-            {i18n.LOADING}
-          </EuiText>
+          <EuiFlexGroup
+            direction="column"
+            gutterSize="s"
+            data-test-subj="leadsFlyoutLoadingSkeleton"
+          >
+            {Array.from({ length: 4 }, (_, index) => (
+              <EuiFlexItem key={index}>
+                <EuiPanel hasBorder paddingSize="s">
+                  <EuiSkeletonTitle size="xs" />
+                  <EuiSpacer size="s" />
+                  <EuiSkeletonRectangle width={48} height={20} borderRadius="m" />
+                  <EuiSpacer size="s" />
+                  <EuiSkeletonText lines={2} size="s" />
+                </EuiPanel>
+              </EuiFlexItem>
+            ))}
+          </EuiFlexGroup>
         ) : (
           <>
             <EuiFlexGroup direction="column" gutterSize="s">
@@ -110,6 +171,7 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
                   <LeadListItem
                     lead={lead}
                     risk={resolveLeadRiskScore(lead, riskByEntityId)}
+                    isRiskLoading={isRiskLoading}
                     onClick={onSelectLead}
                   />
                 </EuiFlexItem>
@@ -125,10 +187,11 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
 interface LeadListItemProps {
   lead: HuntingLead;
   risk?: LeadRiskScore;
+  isRiskLoading?: boolean;
   onClick: (lead: HuntingLead) => void;
 }
 
-const LeadListItem: React.FC<LeadListItemProps> = ({ lead, risk, onClick }) => {
+const LeadListItem: React.FC<LeadListItemProps> = ({ lead, risk, isRiskLoading, onClick }) => {
   const handleClick = useCallback(() => onClick(lead), [onClick, lead]);
   const renderedByline = useMemo(
     () => renderTextWithEntities(lead.byline, lead.entities, THREAT_HUNTING_LEADS_SCOPE_ID),
@@ -152,13 +215,24 @@ const LeadListItem: React.FC<LeadListItemProps> = ({ lead, risk, onClick }) => {
           </EuiFlexGroup>
         </EuiFlexItem>
 
-        {risk && (
+        {risk ? (
           <EuiFlexItem grow={false}>
             <LeadRiskBadge risk={risk} />
           </EuiFlexItem>
+        ) : (
+          isRiskLoading && (
+            <EuiFlexItem grow={false}>
+              <EuiSkeletonRectangle
+                width={48}
+                height={20}
+                borderRadius="m"
+                data-test-subj="leadRiskBadgeSkeleton"
+              />
+            </EuiFlexItem>
+          )
         )}
 
-        {risk && <EuiHorizontalRule margin="s" />}
+        {(risk || isRiskLoading) && <EuiHorizontalRule margin="s" />}
 
         <EuiFlexItem grow={false}>
           <EuiText size="xs">{renderedByline}</EuiText>

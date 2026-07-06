@@ -25,11 +25,27 @@ import {
   EntityPanelKeyByType,
   EntityPanelParamByType,
 } from '../../../../flyout/entity_details/shared/constants';
-import { getOpenEntityFlyoutLabel, getRiskLevelTooltip, TAGS_SECTION } from './translations';
+import {
+  getOpenEntityFlyoutLabel,
+  getRiskLevelTooltip,
+  TAGS_SECTION,
+  VIEW_ENTITY_DETAILS,
+} from './translations';
 import { getEntityIcon, MAX_VISIBLE_TAGS, type LeadRiskScore } from './utils';
 
+const ENTITY_BADGE_NAME_CLASS = 'leadEntityBadge__name';
+const ENTITY_BADGE_NAME_MAX_WIDTH = 220;
+
 export const LeadRiskBadge: React.FC<{ risk: LeadRiskScore }> = ({ risk }) => (
-  <EuiToolTip content={getRiskLevelTooltip(risk.level)}>
+  <EuiToolTip
+    content={getRiskLevelTooltip(risk.level)}
+    position="right"
+    anchorProps={{
+      css: css`
+        width: fit-content;
+      `,
+    }}
+  >
     <RiskScoreCell riskScore={risk.score} data-test-subj="leadRiskBadge" />
   </EuiToolTip>
 );
@@ -56,9 +72,16 @@ export const EntityBadge: React.FC<EntityBadgeProps> = ({ entity, scopeId }) => 
     <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false} component="span">
       <EuiIcon type={getEntityIcon(entity.type)} size="s" aria-hidden={true} />
       <span
+        className={ENTITY_BADGE_NAME_CLASS}
         css={css`
           color: ${euiTheme.colors.textPrimary};
           font-weight: ${euiTheme.font.weight.medium};
+          display: inline-block;
+          max-width: ${ENTITY_BADGE_NAME_MAX_WIDTH}px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          vertical-align: bottom;
         `}
       >
         {entity.name}
@@ -103,25 +126,32 @@ export const EntityBadge: React.FC<EntityBadgeProps> = ({ entity, scopeId }) => 
   // sit inside other clickable elements (cards/panels) that are themselves
   // rendered as `<button>`, and nested buttons are invalid HTML.
   return (
-    <span
-      role="button"
-      tabIndex={0}
-      aria-label={getOpenEntityFlyoutLabel(entity.name)}
-      data-test-subj={`leadEntityBadge-${entity.name}`}
-      onClick={(e) => {
-        e.stopPropagation();
-        openEntityFlyout();
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
+    <EuiToolTip content={VIEW_ENTITY_DETAILS} position="top">
+      <span
+        role="button"
+        tabIndex={0}
+        aria-label={getOpenEntityFlyoutLabel(entity.name)}
+        data-test-subj={`leadEntityBadge-${entity.name}`}
+        css={css`
+          &:hover .${ENTITY_BADGE_NAME_CLASS} {
+            text-decoration: underline;
+          }
+        `}
+        onClick={(e) => {
           e.stopPropagation();
           openEntityFlyout();
-        }
-      }}
-    >
-      <EuiBadge color="hollow">{badgeContent}</EuiBadge>
-    </span>
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            openEntityFlyout();
+          }
+        }}
+      >
+        <EuiBadge color="hollow">{badgeContent}</EuiBadge>
+      </span>
+    </EuiToolTip>
   );
 };
 

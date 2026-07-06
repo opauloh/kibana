@@ -146,12 +146,33 @@ describe('TopThreatHuntingLeads', () => {
     expect(screen.getByText('No data found')).toBeInTheDocument();
   });
 
-  it('renders loading state (spinner visible)', () => {
+  it('renders skeleton loading state while leads are being fetched', () => {
     render(<TopThreatHuntingLeads {...defaultProps} isLoading />);
 
     expect(screen.getByTestId('topThreatHuntingLeads')).toBeInTheDocument();
-    expect(screen.getByTestId('leadsLoadingSpinner')).toBeInTheDocument();
+    expect(screen.getByTestId('leadsLoadingSkeleton')).toBeInTheDocument();
+    expect(screen.queryByTestId('leadsLoadingSpinner')).not.toBeInTheDocument();
     expect(screen.queryByTestId('leadsEmptyPrompt')).not.toBeInTheDocument();
+  });
+
+  it('renders the animated spinner while actively generating leads for the first time', () => {
+    render(<TopThreatHuntingLeads {...defaultProps} isGenerating />);
+
+    expect(screen.getByTestId('leadsLoadingSpinner')).toBeInTheDocument();
+    expect(screen.queryByTestId('leadsLoadingSkeleton')).not.toBeInTheDocument();
+  });
+
+  it('renders a risk badge skeleton on cards while the risk score is loading', () => {
+    mockUseLeadEntityRiskScores.mockReturnValue({
+      riskByEntityId: new Map<string, LeadRiskScore>(),
+      isLoading: true,
+    });
+    const lead = createMockLead();
+
+    render(<TopThreatHuntingLeads {...defaultProps} leads={[lead]} totalCount={1} />);
+
+    expect(screen.getAllByTestId('leadRiskBadgeSkeleton')).toHaveLength(1);
+    expect(screen.queryByTestId('leadRiskBadge')).not.toBeInTheDocument();
   });
 
   it('"See All" button calls onSeeAll', () => {

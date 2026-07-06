@@ -14,7 +14,7 @@ import type { FetchEntitiesListParams } from '../../../api/api';
 import { useEntityAnalyticsRoutes } from '../../../api/api';
 import { useUiSetting } from '../../../../common/lib/kibana';
 
-const ENTITY_STORE_ENTITIES_LIST = 'ENTITY_STORE_ENTITIES_LIST';
+export const ENTITY_STORE_ENTITIES_LIST = 'ENTITY_STORE_ENTITIES_LIST';
 
 interface UseEntitiesListParams extends FetchEntitiesListParams {
   skip: boolean;

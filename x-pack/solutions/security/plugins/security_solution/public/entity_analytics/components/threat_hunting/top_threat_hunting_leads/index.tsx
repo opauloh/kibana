@@ -19,6 +19,9 @@ import {
   EuiLoadingLogo,
   EuiPanel,
   EuiPopover,
+  EuiSkeletonRectangle,
+  EuiSkeletonText,
+  EuiSkeletonTitle,
   EuiSpacer,
   EuiSwitch,
   EuiText,
@@ -87,7 +90,7 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const { euiTheme } = useEuiTheme();
 
-  const { riskByEntityId } = useLeadEntityRiskScores(leads);
+  const { riskByEntityId, isLoading: isRiskLoading } = useLeadEntityRiskScores(leads);
 
   const [cardsContainer, setCardsContainer] = useState<HTMLDivElement | null>(null);
   const { width: containerWidth } = useResizeObserver(cardsContainer);
@@ -301,7 +304,7 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
       {isOpen && (
         <>
           <EuiSpacer size="m" />
-          {isLoading || (isGenerating && leads.length === 0) ? (
+          {isGenerating && leads.length === 0 ? (
             <EuiPanel color="plain" hasBorder={false} hasShadow={false}>
               <EuiFlexGroup
                 direction="column"
@@ -316,13 +319,34 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
                     data-test-subj="leadsLoadingSpinner"
                   />
                 </EuiFlexItem>
-                {isGenerating && (
-                  <EuiFlexItem grow={false}>
-                    <p>{i18n.GENERATING_LEADS_DESCRIPTION}</p>
-                  </EuiFlexItem>
-                )}
+                <EuiFlexItem grow={false}>
+                  <p>{i18n.GENERATING_LEADS_DESCRIPTION}</p>
+                </EuiFlexItem>
               </EuiFlexGroup>
             </EuiPanel>
+          ) : isLoading ? (
+            <div
+              style={{
+                overflow: 'hidden',
+                padding: euiTheme.size.base,
+                margin: `-${euiTheme.size.s}`,
+              }}
+              data-test-subj="leadsLoadingSkeleton"
+            >
+              <EuiFlexGroup gutterSize="m" responsive={false} wrap={false}>
+                {Array.from({ length: MAX_VISIBLE_CARDS }, (_, index) => (
+                  <EuiFlexItem key={index} style={{ minWidth: 0, maxWidth: MAX_CARD_WIDTH }}>
+                    <EuiPanel paddingSize="m" hasBorder={false} hasShadow={false}>
+                      <EuiSkeletonTitle size="xs" />
+                      <EuiSpacer size="s" />
+                      <EuiSkeletonRectangle width={48} height={20} borderRadius="m" />
+                      <EuiSpacer size="s" />
+                      <EuiSkeletonText lines={3} size="s" />
+                    </EuiPanel>
+                  </EuiFlexItem>
+                ))}
+              </EuiFlexGroup>
+            </div>
           ) : leads.length === 0 ? (
             <EuiPanel color="plain" hasBorder={false} hasShadow={false}>
               {hasGenerated ? (
@@ -433,6 +457,7 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
                     <LeadCard
                       lead={lead}
                       risk={resolveLeadRiskScore(lead, riskByEntityId)}
+                      isRiskLoading={isRiskLoading}
                       onClick={onLeadClick}
                     />
                   </EuiFlexItem>

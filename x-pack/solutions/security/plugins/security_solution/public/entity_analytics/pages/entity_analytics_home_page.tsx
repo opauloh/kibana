@@ -335,7 +335,11 @@ const EntityAnalyticsHomePageContent = () => {
       </EuiFlexGroup>
 
       {leadGenerationEnabled && isFlyoutOpen && (
-        <ThreatHuntingLeadsFlyout onClose={handleCloseFlyout} onSelectLead={handleOpenLeadInChat} />
+        <ThreatHuntingLeadsFlyout
+          onClose={handleCloseFlyout}
+          onSelectLead={handleOpenLeadInChat}
+          lastRunTimestamp={lastRunTimestamp}
+        />
       )}
     </>
   );
