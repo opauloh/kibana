@@ -6,18 +6,11 @@
  */
 
 import { useMemo } from 'react';
-import { EntityTypeEnum } from '../../../../../common/api/entity_analytics/entity_store/common.gen';
+import { ALL_ENTITY_TYPES } from '@kbn/entity-store/public';
 import { useEntitiesListQuery } from '../../entity_store/hooks/use_entities_list_query';
 import { getEntityRecordRiskForListDisplay } from '../../entity_store/helpers';
 import type { HuntingLead } from './types';
 import { coerceRiskLevel, getLeadEntityIds, type LeadRiskScore } from './utils';
-
-const ALL_ENTITY_TYPES = [
-  EntityTypeEnum.user,
-  EntityTypeEnum.host,
-  EntityTypeEnum.service,
-  EntityTypeEnum.generic,
-];
 
 const MAX_ENTITIES = 10000;
 

@@ -25,8 +25,9 @@ import {
   EuiTitle,
 } from '@elastic/eui';
 import { useQuery } from '@kbn/react-query';
-import { LEADS_INDEX_PATTERN } from '../../../../../common/entity_analytics/lead_generation/constants';
+import { getLeadsIndexName } from '../../../../../common/entity_analytics/lead_generation/constants';
 import { useKibana } from '../../../../common/lib/kibana';
+import { useSpaceId } from '../../../../common/hooks/use_space_id';
 import { useEntityAnalyticsRoutes } from '../../../api/api';
 import type { HuntingLead } from './types';
 import { fromApiLead } from './types';
@@ -55,15 +56,24 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
 
   const { fetchLeads } = useEntityAnalyticsRoutes();
   const { share } = useKibana().services;
+  const spaceId = useSpaceId();
 
   const handleViewLeadsArchiveIndex = useCallback(async () => {
     const discoverLocator = share?.url.locators.get('DISCOVER_APP_LOCATOR');
-    if (!discoverLocator) return;
+    if (!discoverLocator || !spaceId) return;
+
+    // Scope the data view to this space's leads indices only. The underlying indices are
+    // per-space (see getLeadsIndexName), so a `-*` wildcard would span every space's leads
+    // and is only guarded by raw ES index privileges, not Kibana space isolation.
+    const spaceLeadsIndexPattern = [
+      getLeadsIndexName(spaceId, 'adhoc'),
+      getLeadsIndexName(spaceId, 'scheduled'),
+    ].join(',');
 
     const url = await discoverLocator.getRedirectUrl({
       dataViewSpec: {
-        id: 'entity-analytics-threat-hunting-leads-archive',
-        title: LEADS_INDEX_PATTERN,
+        id: `entity-analytics-threat-hunting-leads-archive-${spaceId}`,
+        title: spaceLeadsIndexPattern,
         allowHidden: true,
       },
     });
@@ -71,7 +81,7 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
-  }, [share]);
+  }, [share, spaceId]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['hunting-leads-flyout'],
@@ -145,6 +155,7 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
               flush="left"
               iconSide="right"
               onClick={handleViewLeadsArchiveIndex}
+              isDisabled={!spaceId}
               data-test-subj="viewLeadsArchiveIndexButton"
             >
               {i18n.VIEW_LEADS_ARCHIVE_INDEX}

@@ -47,6 +47,10 @@ jest.mock('../../../../common/lib/kibana', () => ({
   }),
 }));
 
+jest.mock('../../../../common/hooks/use_space_id', () => ({
+  useSpaceId: jest.fn(() => 'default'),
+}));
+
 const mockUseQuery = jest.requireMock('@kbn/react-query').useQuery as jest.Mock;
 const mockUseEntityAnalyticsRoutes = jest.requireMock('../../../api/api')
   .useEntityAnalyticsRoutes as jest.Mock;
@@ -388,7 +392,9 @@ describe('ThreatHuntingLeadsFlyout', () => {
     expect(mockGetRedirectUrl).toHaveBeenCalledWith(
       expect.objectContaining({
         dataViewSpec: expect.objectContaining({
-          title: '.entity_analytics.entity-leads-*',
+          id: 'entity-analytics-threat-hunting-leads-archive-default',
+          title:
+            '.entity_analytics.entity-leads-adhoc.entity-default,.entity_analytics.entity-leads-scheduled.entity-default',
           allowHidden: true,
         }),
       })
@@ -402,5 +408,15 @@ describe('ThreatHuntingLeadsFlyout', () => {
     );
 
     openSpy.mockRestore();
+  });
+
+  it('disables the leads archive index link while the space id has not resolved yet', () => {
+    const mockUseSpaceId = jest.requireMock('../../../../common/hooks/use_space_id')
+      .useSpaceId as jest.Mock;
+    mockUseSpaceId.mockReturnValueOnce(undefined);
+
+    render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
+
+    expect(screen.getByTestId('viewLeadsArchiveIndexButton')).toBeDisabled();
   });
 });
