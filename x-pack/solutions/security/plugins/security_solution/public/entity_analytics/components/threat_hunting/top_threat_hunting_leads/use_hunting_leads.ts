@@ -20,7 +20,11 @@ const HUNTING_LEADS_QUERY_KEY = 'hunting-leads';
 const LEAD_SCHEDULE_QUERY_KEY = 'lead-generation-status';
 
 const POLL_INTERVAL_MS = 2_000;
-const MAX_POLLS = 30;
+// Active-poll window = MAX_POLLS * POLL_INTERVAL_MS = 150s. The UI advertises
+// "up to two minutes"; the extra ~30s of headroom keeps runs that finish a
+// touch late from routinely hitting the "taking longer than expected" warning.
+// Keep this window below IN_FLIGHT_STALE_MS so reload-resume still works.
+const MAX_POLLS = 75;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -46,7 +50,7 @@ const FETCH_LEADS_PARAMS = {
 // ---------------------------------------------------------------------------
 
 const IN_FLIGHT_STORAGE_KEY_PREFIX = 'securitySolution.entityAnalytics.leadGeneration.inFlight';
-// A run should normally finish within the ~1 min the UI advertises; treat
+// A run should normally finish within the ~2 min the UI advertises; treat
 // anything older than this as abandoned rather than resuming it forever.
 const IN_FLIGHT_STALE_MS = 5 * 60 * 1000;
 

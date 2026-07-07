@@ -138,7 +138,9 @@ describe('TopThreatHuntingLeads', () => {
     render(<TopThreatHuntingLeads {...defaultProps} isGenerating />);
 
     expect(screen.getByTestId('leadsEmptyPrompt')).toBeInTheDocument();
-    expect(screen.getByText('Generating leads. This may take up to a minute.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Generating leads. This may take up to two minutes.')
+    ).toBeInTheDocument();
   });
 
   it('renders the no-connector banner with the "Enable AI Agent" copy', () => {
