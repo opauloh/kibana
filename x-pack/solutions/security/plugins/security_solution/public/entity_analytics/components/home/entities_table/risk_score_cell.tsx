@@ -53,10 +53,7 @@ export const getRiskScoreColors = (
   }
 };
 
-export const RiskScoreCell: React.FC<{ riskScore?: number; 'data-test-subj'?: string }> = ({
-  riskScore,
-  'data-test-subj': dataTestSubj,
-}) => {
+export const RiskScoreCell: React.FC<{ riskScore?: number }> = ({ riskScore }) => {
   const { euiTheme } = useEuiTheme();
 
   if (riskScore == null) {
@@ -67,7 +64,7 @@ export const RiskScoreCell: React.FC<{ riskScore?: number; 'data-test-subj'?: st
   const colors = getRiskScoreColors(euiTheme, riskLevel);
 
   return (
-    <EuiBadge color={colors.background} data-test-subj={dataTestSubj}>
+    <EuiBadge color={colors.background}>
       <EuiText
         css={css`
           font-weight: ${euiTheme.font.weight.semiBold};

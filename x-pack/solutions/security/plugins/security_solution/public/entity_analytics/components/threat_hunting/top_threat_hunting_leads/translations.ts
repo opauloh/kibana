@@ -256,11 +256,6 @@ export const SEARCH_LEADS_PLACEHOLDER = i18n.translate(
   { defaultMessage: 'Filter hunting leads by keywords' }
 );
 
-export const TAGS_SECTION = i18n.translate(
-  'xpack.securitySolution.entityAnalytics.threatHunting.leads.tagsSection',
-  { defaultMessage: 'Tags' }
-);
-
 export const getOpenEntityFlyoutLabel = (name: string) =>
   i18n.translate('xpack.securitySolution.entityAnalytics.threatHunting.leads.openEntityFlyout', {
     defaultMessage: 'Open details for {name}',

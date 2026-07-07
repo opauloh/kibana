@@ -5,18 +5,8 @@
  * 2.0.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  EuiBadge,
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiHorizontalRule,
-  EuiIcon,
-  EuiPopover,
-  EuiText,
-  EuiToolTip,
-  useEuiTheme,
-} from '@elastic/eui';
+import React from 'react';
+import { EuiBadge, EuiFlexGroup, EuiIcon, EuiToolTip, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
 import { EntityType } from '../../../../../common/entity_analytics/types';
@@ -24,8 +14,8 @@ import {
   EntityPanelKeyByType,
   EntityPanelParamByType,
 } from '../../../../flyout/entity_details/shared/constants';
-import { getOpenEntityFlyoutLabel, TAGS_SECTION, VIEW_ENTITY_DETAILS } from './translations';
-import { getEntityIcon, MAX_VISIBLE_TAGS } from './utils';
+import { getOpenEntityFlyoutLabel, VIEW_ENTITY_DETAILS } from './translations';
+import { getEntityIcon } from './utils';
 
 const ENTITY_BADGE_NAME_CLASS = 'leadEntityBadge__name';
 const ENTITY_BADGE_NAME_MAX_WIDTH = 220;
@@ -221,73 +211,4 @@ export const renderTextWithEntities = (
   }
 
   return <>{parts}</>;
-};
-
-export const TagsPopover: React.FC<{ tags: string[] }> = ({ tags }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout>>();
-
-  useEffect(
-    () => () => {
-      if (closeTimer.current) clearTimeout(closeTimer.current);
-    },
-    []
-  );
-
-  const open = useCallback(() => {
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    setIsOpen(true);
-  }, []);
-
-  const scheduleClose = useCallback(() => {
-    closeTimer.current = setTimeout(() => setIsOpen(false), 100);
-  }, []);
-
-  const hiddenTags = tags.slice(MAX_VISIBLE_TAGS);
-
-  return (
-    <EuiPopover
-      isOpen={isOpen}
-      closePopover={() => setIsOpen(false)}
-      panelPaddingSize="s"
-      anchorPosition="downCenter"
-      ownFocus={false}
-      aria-label={TAGS_SECTION}
-      button={
-        <span
-          role="button"
-          tabIndex={0}
-          onMouseEnter={open}
-          onMouseLeave={scheduleClose}
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsOpen((prev) => !prev);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsOpen((prev) => !prev);
-            }
-          }}
-        >
-          <EuiBadge color="hollow">{`+${hiddenTags.length}`}</EuiBadge>
-        </span>
-      }
-    >
-      <div onMouseEnter={open} onMouseLeave={scheduleClose} style={{ maxWidth: 320 }}>
-        <EuiText size="xs">
-          <strong>{TAGS_SECTION}</strong>
-        </EuiText>
-        <EuiHorizontalRule margin="xs" />
-        <EuiFlexGroup gutterSize="xs" responsive={false} wrap>
-          {hiddenTags.map((tag) => (
-            <EuiFlexItem grow={false} key={tag}>
-              <EuiBadge color="hollow">{tag}</EuiBadge>
-            </EuiFlexItem>
-          ))}
-        </EuiFlexGroup>
-      </div>
-    </EuiPopover>
-  );
 };

@@ -18,6 +18,7 @@ import { useLeadGenerationPrivileges } from '../api/hooks/use_lead_generation_pr
 import { useHuntingLeads } from '../components/threat_hunting/top_threat_hunting_leads/use_hunting_leads';
 import { useEntityStoreDataView } from '../components/home/use_entity_store_data_view';
 import { HUNT_WITH_AI_PROMPT } from '../prompts';
+import { EntityEventTypes } from '../../common/lib/telemetry';
 import type { StartServices } from '../../types';
 
 jest.mock('../../common/components/links/link_props', () => {
@@ -602,8 +603,10 @@ describe('EntityAnalyticsHomePage', () => {
     });
 
     const openChat = jest.fn();
+    const reportEvent = jest.fn();
     const startServices = {
       ...kibanaMock,
+      telemetry: { ...kibanaMock.telemetry, reportEvent },
       agentBuilder: { openChat },
     } as unknown as StartServices;
 
@@ -620,6 +623,8 @@ describe('EntityAnalyticsHomePage', () => {
 
     fireEvent.click(screen.getByTestId('mockHuntInChatButton'));
 
+    expect(reportEvent).toHaveBeenCalledTimes(1);
+    expect(reportEvent).toHaveBeenCalledWith(EntityEventTypes.LeadGenerationHuntWithAiClicked, {});
     expect(openChat).toHaveBeenCalledTimes(1);
     expect(openChat).toHaveBeenCalledWith({
       newConversation: true,

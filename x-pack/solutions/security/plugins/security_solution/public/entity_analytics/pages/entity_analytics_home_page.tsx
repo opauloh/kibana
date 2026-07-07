@@ -235,13 +235,14 @@ const EntityAnalyticsHomePageContent = () => {
   );
 
   const handleHuntInChat = useCallback(() => {
+    telemetry.reportEvent(EntityEventTypes.LeadGenerationHuntWithAiClicked, {});
     agentBuilder?.openChat({
       newConversation: true,
       initialMessage: HUNT_WITH_AI_PROMPT,
       autoSendInitialMessage: false,
       sessionTag: 'security',
     });
-  }, [agentBuilder]);
+  }, [agentBuilder, telemetry]);
 
   if (dataViewLoading) {
     return <PageLoader />;

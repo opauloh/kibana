@@ -5,19 +5,13 @@
  * 2.0.
  */
 
-export const MAX_VISIBLE_TAGS = 1;
-
 /**
  * Upper bound on how many recent leads are fetched and surfaced anywhere in
  * the UI (main panel count, "See recent leads" label, and the flyout list).
- *
- * Set to 20 to reflect the actual ceiling under normal generation: each
- * run is capped at 10 leads (`DEFAULT_ENGINE_CONFIG.maxLeads`) and persistence
- * replaces prior leads in the index via a `deleteByQuery` keyed on the new
- * `execution_uuid`, so leads don't accumulate indefinitely, so its only possible
- * to have at most 20 recent leads at a time.
+ * See `MAX_RECENT_LEADS` in the common lead generation constants for how this
+ * is derived from the per-run engine cap.
  */
-export const MAX_RECENT_LEADS = 20;
+export { MAX_RECENT_LEADS } from '../../../../../common/entity_analytics/lead_generation/constants';
 
 /**
  * Scope/context id used when opening an entity flyout from a hunting lead
