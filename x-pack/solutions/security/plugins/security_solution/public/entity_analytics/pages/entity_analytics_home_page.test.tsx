@@ -17,7 +17,7 @@ import { useEntityEnginePrivileges } from '../components/entity_store/hooks/use_
 import { useLeadGenerationPrivileges } from '../api/hooks/use_lead_generation_privileges';
 import { useHuntingLeads } from '../components/threat_hunting/top_threat_hunting_leads/use_hunting_leads';
 import { useEntityStoreDataView } from '../components/home/use_entity_store_data_view';
-import { HUNT_WITH_AI_PROMPT } from '../../agent_builder/components/prompts';
+import { HUNT_WITH_AI_PROMPT } from '../prompts';
 import type { StartServices } from '../../types';
 
 jest.mock('../../common/components/links/link_props', () => {
