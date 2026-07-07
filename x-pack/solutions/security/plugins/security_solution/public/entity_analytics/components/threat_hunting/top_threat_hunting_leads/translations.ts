@@ -18,22 +18,17 @@ export const THREAT_HUNTING_LEADS_BANNER_TITLE = i18n.translate(
   { defaultMessage: 'Threat hunting leads' }
 );
 
-export const TECH_PREVIEW_TOOLTIP = i18n.translate(
-  'xpack.securitySolution.entityAnalytics.threatHunting.leads.techPreviewTooltip',
+export const EXPERIMENTAL_TOOLTIP = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.threatHunting.leads.experimentalTooltip',
   {
     defaultMessage:
-      'This functionality is in technical preview and may be changed or removed completely in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.',
+      'This functionality is experimental and not supported. It may change or be removed at any time.',
   }
 );
 
 export const GENERATE_LEADS = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.leads.generate',
   { defaultMessage: 'Generate' }
-);
-
-export const GENERATE_DISABLED_NO_CONNECTOR_TOOLTIP = i18n.translate(
-  'xpack.securitySolution.entityAnalytics.threatHunting.leads.generateDisabledNoConnectorTooltip',
-  { defaultMessage: 'Ensure that you have a connector available and selected' }
 );
 
 export const REGENERATE = i18n.translate(
@@ -258,19 +253,13 @@ export const getStalenessLabel = (staleness: string): string => {
 
 export const SEARCH_LEADS_PLACEHOLDER = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.leads.searchPlaceholder',
-  { defaultMessage: 'Search leads...' }
+  { defaultMessage: 'Filter hunting leads by keywords' }
 );
 
 export const TAGS_SECTION = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.leads.tagsSection',
   { defaultMessage: 'Tags' }
 );
-
-export const getRiskLevelTooltip = (level: string) =>
-  i18n.translate('xpack.securitySolution.entityAnalytics.threatHunting.leads.riskLevelTooltip', {
-    defaultMessage: 'Risk level: {level}',
-    values: { level },
-  });
 
 export const getOpenEntityFlyoutLabel = (name: string) =>
   i18n.translate('xpack.securitySolution.entityAnalytics.threatHunting.leads.openEntityFlyout', {

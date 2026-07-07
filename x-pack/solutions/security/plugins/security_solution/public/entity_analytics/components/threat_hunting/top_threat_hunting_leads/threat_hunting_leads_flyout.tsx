@@ -14,16 +14,18 @@ import {
   EuiFlyoutBody,
   EuiFlyoutHeader,
   EuiFlyoutResizable,
-  EuiHorizontalRule,
   EuiNotificationBadge,
   EuiPanel,
-  EuiSkeletonRectangle,
   EuiSkeletonText,
   EuiSkeletonTitle,
   EuiSpacer,
   EuiText,
   EuiTitle,
+  EuiToolTip,
+  useEuiFontSize,
+  useEuiTheme,
 } from '@elastic/eui';
+import { css } from '@emotion/react';
 import { useQuery } from '@kbn/react-query';
 import { getLeadsIndexName } from '../../../../../common/entity_analytics/lead_generation/constants';
 import { useKibana } from '../../../../common/lib/kibana';
@@ -32,14 +34,8 @@ import { useEntityAnalyticsRoutes } from '../../../api/api';
 import type { HuntingLead } from './types';
 import { fromApiLead } from './types';
 import * as i18n from './translations';
-import { LeadRiskBadge, renderTextWithEntities } from './shared_lead_components';
-import { useLeadEntityRiskScores } from './use_lead_entity_risk';
-import {
-  MAX_RECENT_LEADS,
-  resolveLeadRiskScore,
-  THREAT_HUNTING_LEADS_SCOPE_ID,
-  type LeadRiskScore,
-} from './utils';
+import { renderTextWithEntities } from './shared_lead_components';
+import { MAX_RECENT_LEADS, THREAT_HUNTING_LEADS_SCOPE_ID } from './utils';
 
 interface ThreatHuntingLeadsFlyoutProps {
   onClose: () => void;
@@ -99,8 +95,6 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
 
   const leads: HuntingLead[] = useMemo(() => data?.leads?.map(fromApiLead) ?? [], [data?.leads]);
 
-  const { riskByEntityId, isLoading: isRiskLoading } = useLeadEntityRiskScores(leads);
-
   const filteredLeads = useMemo(() => {
     if (!searchQuery) return leads;
     const query = searchQuery.toLowerCase();
@@ -123,7 +117,7 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
       <EuiFlyoutHeader hasBorder>
         <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
           <EuiFlexItem grow={false}>
-            <EuiTitle size="m">
+            <EuiTitle size="s">
               <h2>{i18n.ALL_HUNTING_LEADS_TITLE}</h2>
             </EuiTitle>
           </EuiFlexItem>
@@ -185,8 +179,6 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
                 <EuiPanel hasBorder paddingSize="s">
                   <EuiSkeletonTitle size="xs" />
                   <EuiSpacer size="s" />
-                  <EuiSkeletonRectangle width={48} height={20} borderRadius="m" />
-                  <EuiSpacer size="s" />
                   <EuiSkeletonText lines={2} size="s" />
                 </EuiPanel>
               </EuiFlexItem>
@@ -202,12 +194,7 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
           <EuiFlexGroup direction="column" gutterSize="s">
             {filteredLeads.map((lead) => (
               <EuiFlexItem key={lead.id}>
-                <LeadListItem
-                  lead={lead}
-                  risk={resolveLeadRiskScore(lead, riskByEntityId)}
-                  isRiskLoading={isRiskLoading}
-                  onClick={onSelectLead}
-                />
+                <LeadListItem lead={lead} onClick={onSelectLead} />
               </EuiFlexItem>
             ))}
           </EuiFlexGroup>
@@ -219,12 +206,12 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
 
 interface LeadListItemProps {
   lead: HuntingLead;
-  risk?: LeadRiskScore;
-  isRiskLoading?: boolean;
   onClick: (lead: HuntingLead) => void;
 }
 
-const LeadListItem: React.FC<LeadListItemProps> = ({ lead, risk, isRiskLoading, onClick }) => {
+const LeadListItem: React.FC<LeadListItemProps> = ({ lead, onClick }) => {
+  const { euiTheme } = useEuiTheme();
+  const fontSizeM = useEuiFontSize('m');
   const handleClick = useCallback(() => onClick(lead), [onClick, lead]);
   const renderedByline = useMemo(
     () => renderTextWithEntities(lead.byline, lead.entities, THREAT_HUNTING_LEADS_SCOPE_ID),
@@ -240,32 +227,25 @@ const LeadListItem: React.FC<LeadListItemProps> = ({ lead, risk, isRiskLoading, 
       <EuiFlexGroup direction="column" gutterSize="xs">
         <EuiFlexItem grow={false}>
           <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
-            <EuiFlexItem>
-              <EuiText size="s">
-                <strong>{lead.title}</strong>
-              </EuiText>
+            <EuiFlexItem style={{ minWidth: 0 }}>
+              <h4
+                css={css`
+                  ${fontSizeM}
+                  font-weight: ${euiTheme.font.weight.semiBold};
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  display: -webkit-box;
+                  -webkit-line-clamp: 1;
+                  -webkit-box-orient: vertical;
+                `}
+              >
+                <EuiToolTip content={lead.title} anchorClassName="eui-textTruncate" display="block">
+                  <span tabIndex={0}>{lead.title}</span>
+                </EuiToolTip>
+              </h4>
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiFlexItem>
-
-        {risk ? (
-          <EuiFlexItem grow={false}>
-            <LeadRiskBadge risk={risk} />
-          </EuiFlexItem>
-        ) : (
-          isRiskLoading && (
-            <EuiFlexItem grow={false}>
-              <EuiSkeletonRectangle
-                width={48}
-                height={20}
-                borderRadius="m"
-                data-test-subj="leadRiskBadgeSkeleton"
-              />
-            </EuiFlexItem>
-          )
-        )}
-
-        {(risk || isRiskLoading) && <EuiHorizontalRule margin="s" />}
 
         <EuiFlexItem grow={false}>
           <EuiText size="xs">{renderedByline}</EuiText>

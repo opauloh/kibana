@@ -17,7 +17,6 @@ import {
   EuiIcon,
   EuiPanel,
   EuiPopover,
-  EuiSkeletonRectangle,
   EuiSkeletonText,
   EuiSkeletonTitle,
   EuiSpacer,
@@ -36,8 +35,6 @@ import { useKibana } from '../../../../common/lib/kibana';
 import type { HuntingLead } from './types';
 import { LeadCard } from './lead_card';
 import { LeadsBanner } from './leads_banner';
-import { useLeadEntityRiskScores } from './use_lead_entity_risk';
-import { resolveLeadRiskScore } from './utils';
 import * as i18n from './translations';
 
 const MAX_VISIBLE_CARDS = 5;
@@ -92,8 +89,6 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const { euiTheme } = useEuiTheme();
 
-  const { riskByEntityId, isLoading: isRiskLoading } = useLeadEntityRiskScores(leads);
-
   const [cardsContainer, setCardsContainer] = useState<HTMLDivElement | null>(null);
   const { width: containerWidth } = useResizeObserver(cardsContainer);
   const visibleCardCount =
@@ -118,13 +113,11 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
 
   const generateTooltipContent = hasWritePermissionError
     ? i18n.GENERATE_DISABLED_NO_WRITE_PERMISSION_TOOLTIP
-    : !hasValidConnector
-    ? i18n.GENERATE_DISABLED_NO_CONNECTOR_TOOLTIP
     : undefined;
-  const isGenerateDisabled = !hasValidConnector || !!hasWritePermissionError;
+  const isGenerateDisabled = !!hasWritePermissionError;
   const renderCount = Math.min(leads.length, visibleCardCount);
   const hasFewLeads = leads.length < visibleCardCount;
-  const noConnector = !isAgentChatExperienceEnabled;
+  const noConnector = !isAgentChatExperienceEnabled || !hasValidConnector;
 
   const openGenAiSettingsButton = (
     <EuiButton
@@ -140,7 +133,24 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
     </EuiButton>
   );
 
-  const generateActionButton = (
+  // Once a generation run has completed but found nothing, "Regenerate" is a
+  // low-emphasis retry rather than the primary call-to-action, so it's
+  // rendered as a plain link-style button instead of the prominent AI button
+  // used to kick off the first generation.
+  const generateActionButton = hasGenerated ? (
+    <EuiToolTip content={generateTooltipContent}>
+      <EuiButtonEmpty
+        size="s"
+        iconType="refresh"
+        isLoading={isGenerating}
+        isDisabled={isGenerateDisabled}
+        onClick={onGenerate}
+        data-test-subj="generateLeadsButton"
+      >
+        {i18n.REGENERATE}
+      </EuiButtonEmpty>
+    </EuiToolTip>
+  ) : (
     <EuiToolTip content={generateTooltipContent}>
       <AiButton
         size="s"
@@ -150,7 +160,7 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
         onClick={onGenerate}
         data-test-subj="generateLeadsButton"
       >
-        {hasGenerated ? i18n.REGENERATE : i18n.GENERATE_LEADS}
+        {i18n.GENERATE_LEADS}
       </AiButton>
     </EuiToolTip>
   );
@@ -246,7 +256,7 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
 
   return (
     <EuiPanel hasBorder data-test-subj="topThreatHuntingLeads" color="subdued">
-      <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
+      <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} wrap>
         <EuiFlexItem grow={false}>
           <EuiToolTip content={isOpen ? i18n.COLLAPSE : i18n.EXPAND} disableScreenReaderOutput>
             <EuiButtonIcon
@@ -261,8 +271,8 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
         <EuiFlexItem grow={false}>
           <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
             <EuiFlexItem grow={1} style={{ minWidth: 0 }}>
-              <EuiTitle size="m">
-                <h2 className="eui-textTruncate">{i18n.TOP_THREAT_HUNTING_LEADS_TITLE}</h2>
+              <EuiTitle size="s">
+                <h3 className="eui-textTruncate">{i18n.TOP_THREAT_HUNTING_LEADS_TITLE}</h3>
               </EuiTitle>
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
@@ -273,14 +283,20 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
                 label="Tech Preview"
                 iconType="flask"
                 aria-hidden={true}
-                tooltipContent={i18n.TECH_PREVIEW_TOOLTIP}
+                tooltipContent={i18n.EXPERIMENTAL_TOOLTIP}
               />
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiFlexItem>
         <EuiFlexItem />
-        <EuiFlexItem grow={false}>
-          <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} wrap>
+        <EuiFlexItem grow={false} css={{ marginLeft: 'auto' }}>
+          <EuiFlexGroup
+            alignItems="center"
+            gutterSize="s"
+            responsive={false}
+            wrap
+            justifyContent="flexEnd"
+          >
             {leads.length > 0 && lastRunTimestamp && (
               <EuiFlexItem grow={false}>
                 <EuiText size="xs" color="subdued" data-test-subj="leadsGeneratedTimestamp">
@@ -356,8 +372,6 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
                     <EuiPanel paddingSize="m" hasBorder={false} hasShadow={false}>
                       <EuiSkeletonTitle size="xs" />
                       <EuiSpacer size="s" />
-                      <EuiSkeletonRectangle width={48} height={20} borderRadius="m" />
-                      <EuiSpacer size="s" />
                       <EuiSkeletonText lines={3} size="s" />
                     </EuiPanel>
                   </EuiFlexItem>
@@ -388,12 +402,7 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
                       maxWidth: hasFewLeads ? MAX_CARD_WIDTH : undefined,
                     }}
                   >
-                    <LeadCard
-                      lead={lead}
-                      risk={resolveLeadRiskScore(lead, riskByEntityId)}
-                      isRiskLoading={isRiskLoading}
-                      onClick={onLeadClick}
-                    />
+                    <LeadCard lead={lead} onClick={onLeadClick} />
                   </EuiFlexItem>
                 ))}
               </EuiFlexGroup>

@@ -70,7 +70,7 @@ export const LeadsBanner: React.FC<LeadsBannerProps> = ({
         <EuiImage size={32} alt="" url={illustration} />
       </EuiFlexItem>
       <EuiFlexItem grow={false}>
-        <EuiTitle size="xs">
+        <EuiTitle size="s">
           <h3 className="eui-textNoWrap">{i18n.THREAT_HUNTING_LEADS_BANNER_TITLE}</h3>
         </EuiTitle>
       </EuiFlexItem>
@@ -82,7 +82,7 @@ export const LeadsBanner: React.FC<LeadsBannerProps> = ({
           label="Tech Preview"
           iconType="flask"
           aria-hidden={true}
-          tooltipContent={i18n.TECH_PREVIEW_TOOLTIP}
+          tooltipContent={i18n.EXPERIMENTAL_TOOLTIP}
         />
       </EuiFlexItem>
       <EuiFlexItem />
@@ -97,8 +97,17 @@ export const LeadsBanner: React.FC<LeadsBannerProps> = ({
         </EuiText>
       </EuiFlexItem>
       {actions && (
-        <EuiFlexItem grow={false}>
-          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+        // `margin-left: auto` keeps the actions flush with the right edge of
+        // their own flex line, so they stay right-aligned even when they wrap
+        // onto a new line below the title/description on narrow screens.
+        <EuiFlexItem grow={false} css={{ marginLeft: 'auto' }}>
+          <EuiFlexGroup
+            gutterSize="s"
+            alignItems="center"
+            responsive={false}
+            wrap
+            justifyContent="flexEnd"
+          >
             {actions}
           </EuiFlexGroup>
         </EuiFlexItem>

@@ -6,27 +6,17 @@
  */
 
 import React, { useCallback, useMemo } from 'react';
-import {
-  EuiCard,
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiHorizontalRule,
-  EuiSkeletonRectangle,
-  EuiText,
-  EuiToolTip,
-} from '@elastic/eui';
+import { EuiCard, EuiFlexGroup, EuiFlexItem, EuiText, EuiToolTip } from '@elastic/eui';
 import type { HuntingLead } from './types';
-import { LeadRiskBadge, renderTextWithEntities } from './shared_lead_components';
-import { THREAT_HUNTING_LEADS_SCOPE_ID, type LeadRiskScore } from './utils';
+import { renderTextWithEntities } from './shared_lead_components';
+import { THREAT_HUNTING_LEADS_SCOPE_ID } from './utils';
 
 interface LeadCardProps {
   lead: HuntingLead;
-  risk?: LeadRiskScore;
-  isRiskLoading?: boolean;
   onClick: (lead: HuntingLead) => void;
 }
 
-export const LeadCard: React.FC<LeadCardProps> = ({ lead, risk, isRiskLoading, onClick }) => {
+export const LeadCard: React.FC<LeadCardProps> = ({ lead, onClick }) => {
   const handleClick = useCallback(() => onClick(lead), [onClick, lead]);
   const renderedByline = useMemo(
     () => renderTextWithEntities(lead.byline, lead.entities, THREAT_HUNTING_LEADS_SCOPE_ID),
@@ -54,26 +44,6 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, risk, isRiskLoading, o
       }}
     >
       <EuiFlexGroup direction="column" gutterSize="none">
-        {risk ? (
-          <>
-            <EuiFlexItem grow={false}>
-              <LeadRiskBadge risk={risk} />
-            </EuiFlexItem>
-            <EuiHorizontalRule margin="s" />
-          </>
-        ) : isRiskLoading ? (
-          <>
-            <EuiFlexItem grow={false}>
-              <EuiSkeletonRectangle
-                width={48}
-                height={20}
-                borderRadius="m"
-                data-test-subj="leadRiskBadgeSkeleton"
-              />
-            </EuiFlexItem>
-            <EuiHorizontalRule margin="s" />
-          </>
-        ) : null}
         <EuiFlexItem grow={false}>
           <EuiText
             size="xs"

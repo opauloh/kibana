@@ -10,7 +10,6 @@ import { render, screen, fireEvent } from '@testing-library/react';
 
 import { TopThreatHuntingLeads } from '.';
 import type { HuntingLead, Observation } from './types';
-import type { LeadRiskScore } from './utils';
 
 jest.mock('../../../../common/lib/kibana', () => ({
   useKibana: () => ({
@@ -22,26 +21,12 @@ jest.mock('../../../../common/lib/kibana', () => ({
   }),
 }));
 
-jest.mock('./use_lead_entity_risk', () => ({
-  useLeadEntityRiskScores: jest.fn(),
-}));
-
 const mockOpenFlyout = jest.fn();
 jest.mock('@kbn/expandable-flyout', () => ({
   useExpandableFlyoutApi: () => ({
     openFlyout: mockOpenFlyout,
   }),
 }));
-
-const mockUseLeadEntityRiskScores = jest.requireMock('./use_lead_entity_risk')
-  .useLeadEntityRiskScores as jest.Mock;
-
-const setRiskScores = (entries: Array<[string, LeadRiskScore]> = []) => {
-  mockUseLeadEntityRiskScores.mockReturnValue({
-    riskByEntityId: new Map<string, LeadRiskScore>(entries),
-    isLoading: false,
-  });
-};
 
 const createMockObservation = (overrides: Partial<Observation> = {}): Observation => ({
   entityId: 'entity-1',
@@ -92,7 +77,6 @@ const defaultProps = {
 describe('TopThreatHuntingLeads', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    setRiskScores();
   });
 
   it('renders cards with mock leads data (shows card for each lead, max 5)', () => {
@@ -181,19 +165,6 @@ describe('TopThreatHuntingLeads', () => {
     expect(screen.queryByTestId('leadsLoadingSkeleton')).not.toBeInTheDocument();
   });
 
-  it('renders a risk badge skeleton on cards while the risk score is loading', () => {
-    mockUseLeadEntityRiskScores.mockReturnValue({
-      riskByEntityId: new Map<string, LeadRiskScore>(),
-      isLoading: true,
-    });
-    const lead = createMockLead();
-
-    render(<TopThreatHuntingLeads {...defaultProps} leads={[lead]} totalCount={1} />);
-
-    expect(screen.getAllByTestId('leadRiskBadgeSkeleton')).toHaveLength(1);
-    expect(screen.queryByTestId('leadRiskBadge')).not.toBeInTheDocument();
-  });
-
   it('"See All" button calls onSeeAll', () => {
     const onSeeAll = jest.fn();
     const lead = createMockLead();
@@ -234,13 +205,11 @@ describe('TopThreatHuntingLeads', () => {
     expect(screen.queryByTestId('generateLeadsButton')).not.toBeInTheDocument();
   });
 
-  it('disables "Generate" button under Agent experience when no valid connector is selected', () => {
+  it('shows "Open GenAI Settings" button (not "Generate") under Agent experience when no valid connector is selected', () => {
     render(<TopThreatHuntingLeads {...defaultProps} connectorId="" hasValidConnector={false} />);
 
-    const generateButton = screen.getByTestId('generateLeadsButton');
-    expect(generateButton).toBeInTheDocument();
-    expect(generateButton).toBeDisabled();
-    expect(screen.queryByTestId('openGenAiSettingsButton')).not.toBeInTheDocument();
+    expect(screen.getByTestId('openGenAiSettingsButton')).toBeInTheDocument();
+    expect(screen.queryByTestId('generateLeadsButton')).not.toBeInTheDocument();
   });
 
   it('shows "Generate" button when no leads exist and calls onGenerate', () => {
@@ -257,12 +226,13 @@ describe('TopThreatHuntingLeads', () => {
     expect(onGenerate).toHaveBeenCalledTimes(1);
   });
 
-  it('shows "Regenerate" action (not "Generate") in the no-data banner when generation produced no leads', () => {
+  it('shows a link-style "Regenerate" action (not "Generate") in the no-data banner when generation produced no leads', () => {
     render(<TopThreatHuntingLeads {...defaultProps} hasGenerated />);
 
     const button = screen.getByTestId('generateLeadsButton');
     expect(button).toBeInTheDocument();
     expect(button).toHaveTextContent('Regenerate');
+    expect(button.className).toContain('euiButtonEmpty');
     expect(screen.queryByTestId('refreshLeadsButton')).not.toBeInTheDocument();
   });
 
@@ -427,29 +397,5 @@ describe('TopThreatHuntingLeads', () => {
     expect(mockOpenFlyout).not.toHaveBeenCalled();
     expect(onLeadClick).toHaveBeenCalledTimes(1);
     expect(onLeadClick).toHaveBeenCalledWith(lead);
-  });
-
-  it('renders the risk badge with the formatted score from the entity store', () => {
-    setRiskScores([['host:entity-1', { score: 82, level: 'High' }]]);
-    const lead = createMockLead({
-      id: 'lead-risk',
-      observations: [createMockObservation({ entityId: 'host:entity-1' })],
-    });
-
-    render(<TopThreatHuntingLeads {...defaultProps} leads={[lead]} totalCount={1} />);
-
-    expect(screen.getByTestId('leadRiskBadge')).toHaveTextContent('82.00');
-  });
-
-  it('does not render the risk badge when the entity has no risk score in the store', () => {
-    setRiskScores();
-    const lead = createMockLead({
-      id: 'lead-no-risk',
-      observations: [createMockObservation({ entityId: 'host:entity-1' })],
-    });
-
-    render(<TopThreatHuntingLeads {...defaultProps} leads={[lead]} totalCount={1} />);
-
-    expect(screen.queryByTestId('leadRiskBadge')).not.toBeInTheDocument();
   });
 });

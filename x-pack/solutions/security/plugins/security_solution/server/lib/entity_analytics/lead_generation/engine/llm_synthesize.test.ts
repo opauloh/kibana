@@ -30,9 +30,11 @@ jest.mock('@langchain/core/prompts', () => ({
   },
 }));
 
-const { llmSynthesizeBatch } = jest.requireActual('./llm_synthesize') as {
+const { llmSynthesizeBatch, __testables } = jest.requireActual('./llm_synthesize') as {
   llmSynthesizeBatch: typeof import('./llm_synthesize').llmSynthesizeBatch;
+  __testables: typeof import('./llm_synthesize').__testables;
 };
+const { formatLeadsPayload, formatRiskEscalation } = __testables;
 
 const createMockEntity = (name: string, type = 'user'): LeadEntity => {
   const id = `${type}:${name}`;
@@ -362,5 +364,100 @@ describe('llmSynthesizeBatch', () => {
     const results = await llmSynthesizeBatch(fakeChatModel, groups, logger);
 
     expect(results[0].tags).toEqual(['42', 'true', 'valid-tag']);
+  });
+});
+
+describe('formatLeadsPayload', () => {
+  it('renders observation scores as signal_strength, never as a bare score', () => {
+    const groups = [[createScoredEntity('alice', 8)]];
+
+    const payload = formatLeadsPayload(groups);
+
+    expect(payload).toContain('signal_strength=80/100');
+    expect(payload).not.toMatch(/[^_]score=\d+\/100/);
+  });
+});
+
+describe('formatRiskEscalation', () => {
+  it('returns a Risk escalation line with the exact from/to/delta/window for a 24h escalation', () => {
+    const group = [
+      createScoredEntity('alice', 9, [
+        {
+          type: 'risk_escalation_24h',
+          metadata: { previous_score: 22, current_score: 63, delta: 41, window: '24 hours' },
+        },
+      ]),
+    ];
+
+    const line = formatRiskEscalation(group);
+
+    expect(line).toContain('Risk escalation:');
+    expect(line).toContain('rose from 22 to 63');
+    expect(line).toContain('(+41)');
+    expect(line).toContain('24 hours');
+  });
+
+  it('returns a Risk escalation line for a 7d escalation', () => {
+    const group = [
+      createScoredEntity('bob', 7, [
+        {
+          type: 'risk_escalation_7d',
+          metadata: { previous_score: 30, current_score: 55, delta: 25, window: '7 days' },
+        },
+      ]),
+    ];
+
+    const line = formatRiskEscalation(group);
+
+    expect(line).toContain('Risk escalation:');
+    expect(line).toContain('rose from 30 to 55');
+  });
+
+  it('picks the escalation with the largest delta when multiple are present', () => {
+    const group = [
+      createScoredEntity('carol', 9, [
+        {
+          type: 'risk_escalation_7d',
+          metadata: { previous_score: 30, current_score: 55, delta: 25, window: '7 days' },
+        },
+        {
+          type: 'risk_escalation_24h',
+          metadata: { previous_score: 40, current_score: 90, delta: 50, window: '24 hours' },
+        },
+      ]),
+    ];
+
+    const line = formatRiskEscalation(group);
+
+    expect(line).toContain('rose from 40 to 90');
+  });
+
+  it('returns an empty string when there is no escalation observation', () => {
+    const group = [
+      createScoredEntity('dave', 4, [
+        {
+          type: 'newly_observed_entity',
+          score: 40,
+          severity: 'low',
+          confidence: 0.6,
+          metadata: { days_since_first_seen: 1 },
+        },
+      ]),
+    ];
+
+    expect(formatRiskEscalation(group)).toBe('');
+  });
+
+  it('returns an empty string for a 90-day escalation (not a short window)', () => {
+    const group = [
+      createScoredEntity('erin', 6, [
+        {
+          type: 'risk_escalation_90d',
+          metadata: { previous_score: 20, current_score: 45, delta: 25, window: '90 days' },
+        },
+      ]),
+    ];
+
+    expect(formatRiskEscalation(group)).toBe('');
   });
 });

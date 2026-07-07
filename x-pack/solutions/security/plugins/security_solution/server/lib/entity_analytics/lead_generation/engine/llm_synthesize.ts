@@ -54,6 +54,8 @@ Rules:
 - Never pad with generic security advice; every sentence must be grounded in the specific data provided
 - Vary titles across leads — do not reuse the same phrasing
 - When a lead includes "Peer context" (other candidate entities sharing the same signal), you may reference it in the byline or description to convey scope — e.g. "alongside 5 other privileged accounts escalating in the same window". Only use peer counts that are provided; never invent them.
+- Never mention, quote, or paraphrase the \`signal_strength\` value anywhere (title, byline, description, tags). It is an internal ranking signal, not something meaningful to an analyst, and must not be shown.
+- Only state a numeric risk score when a "Risk escalation" line is present for that lead; use exactly the from/to numbers and window given, and never invent, estimate, or restate a risk score from any other field (including \`signal_strength\`). If no "Risk escalation" line is present, do not mention a risk score at all.
 
 You will receive data for {lead_count} lead(s). Respond ONLY with a valid JSON array (no markdown fences, no extra text) containing exactly {lead_count} objects in the same order as the input, each matching this schema:
 {{
@@ -96,6 +98,38 @@ const formatPeerContext = (group: ScoredEntityInput[], cohort?: CohortContext): 
   return `  Peer context: ${peerSignals.join('; ')} (of ${cohort.totalCandidates} candidates).`;
 };
 
+/**
+ * Risk escalation observation types considered "short window" — recent enough
+ * that a jump is a meaningful why-now signal rather than gradual drift.
+ * `risk_escalation_90d` is intentionally excluded.
+ */
+const SHORT_WINDOW_ESCALATION_TYPES = new Set(['risk_escalation_24h', 'risk_escalation_7d']);
+
+/**
+ * Builds an explicit, deterministic "Risk escalation" line from the risk
+ * module's own before/after numbers when a short-window escalation
+ * observation is present. This is the ONLY sanctioned source of a risk score
+ * in the prompt — see the corresponding prompt rule — so the LLM never has
+ * to infer or invent one from an unrelated observation's signal strength.
+ */
+const formatRiskEscalation = (group: ScoredEntityInput[]): string => {
+  const escalation = group
+    .flatMap((s) => s.observations)
+    .filter((o) => SHORT_WINDOW_ESCALATION_TYPES.has(o.type))
+    .sort((a, b) => Number(b.metadata.delta ?? 0) - Number(a.metadata.delta ?? 0))[0];
+  if (!escalation) return '';
+
+  const previousScore = Number(escalation.metadata.previous_score);
+  const currentScore = Number(escalation.metadata.current_score);
+  const delta = Number(escalation.metadata.delta);
+  const window = escalation.metadata.window;
+  if (Number.isNaN(previousScore) || Number.isNaN(currentScore) || Number.isNaN(delta)) return '';
+
+  return `  Risk escalation: risk score rose from ${Math.round(previousScore)} to ${Math.round(
+    currentScore
+  )} (+${Math.round(delta)}) over the last ${window}.`;
+};
+
 const formatLeadsPayload = (groups: ScoredEntityInput[][], cohort?: CohortContext): string => {
   return groups
     .map((group, i) => {
@@ -113,7 +147,7 @@ const formatLeadsPayload = (groups: ScoredEntityInput[][], cohort?: CohortContex
                 .join(', ');
               return `  - [${obs.severity.toUpperCase()}] ${obs.description} (type=${
                 obs.type
-              }, score=${obs.score}/100${metaEntries ? `, ${metaEntries}` : ''})`;
+              }, signal_strength=${obs.score}/100${metaEntries ? `, ${metaEntries}` : ''})`;
             });
         })
         .join('\n');
@@ -122,8 +156,9 @@ const formatLeadsPayload = (groups: ScoredEntityInput[][], cohort?: CohortContex
         group.length > 1
           ? `### Lead ${i + 1} — Campaign (${group.length} entities)`
           : `### Lead ${i + 1} — Single entity`;
+      const riskEscalation = formatRiskEscalation(group);
       const peerContext = formatPeerContext(group, cohort);
-      return [header, entityLines, obsLines, peerContext].filter(Boolean).join('\n');
+      return [header, entityLines, obsLines, riskEscalation, peerContext].filter(Boolean).join('\n');
     })
     .join('\n\n');
 };
@@ -206,3 +241,9 @@ const stripMarkdown = (text: string): string =>
     .replace(/_{1,3}([^_]+)_{1,3}/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
     .trim();
+
+/** Exported for unit testing. */
+export const __testables = {
+  formatLeadsPayload,
+  formatRiskEscalation,
+};

@@ -19,36 +19,26 @@ import {
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
-import { RiskScoreCell } from '../../home/entities_table/risk_score_cell';
 import { EntityType } from '../../../../../common/entity_analytics/types';
 import {
   EntityPanelKeyByType,
   EntityPanelParamByType,
 } from '../../../../flyout/entity_details/shared/constants';
-import {
-  getOpenEntityFlyoutLabel,
-  getRiskLevelTooltip,
-  TAGS_SECTION,
-  VIEW_ENTITY_DETAILS,
-} from './translations';
-import { getEntityIcon, MAX_VISIBLE_TAGS, type LeadRiskScore } from './utils';
+import { getOpenEntityFlyoutLabel, TAGS_SECTION, VIEW_ENTITY_DETAILS } from './translations';
+import { getEntityIcon, MAX_VISIBLE_TAGS } from './utils';
 
 const ENTITY_BADGE_NAME_CLASS = 'leadEntityBadge__name';
 const ENTITY_BADGE_NAME_MAX_WIDTH = 220;
 
-export const LeadRiskBadge: React.FC<{ risk: LeadRiskScore }> = ({ risk }) => (
-  <EuiToolTip
-    content={getRiskLevelTooltip(risk.level)}
-    position="right"
-    anchorProps={{
-      css: css`
-        width: fit-content;
-      `,
-    }}
-  >
-    <RiskScoreCell riskScore={risk.score} data-test-subj="leadRiskBadge" />
-  </EuiToolTip>
-);
+// Lets the badge shrink below its content width (rather than overflowing the
+// card) when the surrounding card/panel is narrower than the badge's natural
+// size, e.g. on small screens.
+const entityBadgeContainerCss = css`
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  vertical-align: bottom;
+`;
 
 const isKnownEntityType = (type: string): type is EntityType =>
   (Object.values(EntityType) as string[]).includes(type);
@@ -69,7 +59,16 @@ export const EntityBadge: React.FC<EntityBadgeProps> = ({ entity, scopeId }) => 
   const { euiTheme } = useEuiTheme();
 
   const badgeContent = (
-    <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false} component="span">
+    <EuiFlexGroup
+      alignItems="center"
+      gutterSize="xs"
+      responsive={false}
+      component="span"
+      css={css`
+        min-width: 0;
+        max-width: 100%;
+      `}
+    >
       <EuiIcon type={getEntityIcon(entity.type)} size="s" aria-hidden={true} />
       <span
         className={ENTITY_BADGE_NAME_CLASS}
@@ -77,7 +76,8 @@ export const EntityBadge: React.FC<EntityBadgeProps> = ({ entity, scopeId }) => 
           color: ${euiTheme.colors.textPrimary};
           font-weight: ${euiTheme.font.weight.medium};
           display: inline-block;
-          max-width: ${ENTITY_BADGE_NAME_MAX_WIDTH}px;
+          min-width: 0;
+          max-width: min(${ENTITY_BADGE_NAME_MAX_WIDTH}px, 100%);
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -90,14 +90,22 @@ export const EntityBadge: React.FC<EntityBadgeProps> = ({ entity, scopeId }) => 
   );
 
   if (!isKnownEntityType(entity.type)) {
-    return <EuiBadge color="hollow">{badgeContent}</EuiBadge>;
+    return (
+      <EuiBadge color="hollow" css={entityBadgeContainerCss}>
+        {badgeContent}
+      </EuiBadge>
+    );
   }
 
   const panelKey = EntityPanelKeyByType[entity.type];
   const panelParam = EntityPanelParamByType[entity.type];
 
   if (!panelKey || !panelParam) {
-    return <EuiBadge color="hollow">{badgeContent}</EuiBadge>;
+    return (
+      <EuiBadge color="hollow" css={entityBadgeContainerCss}>
+        {badgeContent}
+      </EuiBadge>
+    );
   }
 
   // Prefer the real Entity Store EUID (e.g. `host:8c67cb16-...`) so the
@@ -133,6 +141,11 @@ export const EntityBadge: React.FC<EntityBadgeProps> = ({ entity, scopeId }) => 
         aria-label={getOpenEntityFlyoutLabel(entity.name)}
         data-test-subj={`leadEntityBadge-${entity.name}`}
         css={css`
+          display: inline-block;
+          min-width: 0;
+          max-width: 100%;
+          vertical-align: bottom;
+
           &:hover .${ENTITY_BADGE_NAME_CLASS} {
             text-decoration: underline;
           }
@@ -149,7 +162,9 @@ export const EntityBadge: React.FC<EntityBadgeProps> = ({ entity, scopeId }) => 
           }
         }}
       >
-        <EuiBadge color="hollow">{badgeContent}</EuiBadge>
+        <EuiBadge color="hollow" css={entityBadgeContainerCss}>
+          {badgeContent}
+        </EuiBadge>
       </span>
     </EuiToolTip>
   );
