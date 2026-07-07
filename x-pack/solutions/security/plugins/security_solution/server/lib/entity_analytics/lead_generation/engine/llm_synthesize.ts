@@ -158,7 +158,9 @@ const formatLeadsPayload = (groups: ScoredEntityInput[][], cohort?: CohortContex
           : `### Lead ${i + 1} — Single entity`;
       const riskEscalation = formatRiskEscalation(group);
       const peerContext = formatPeerContext(group, cohort);
-      return [header, entityLines, obsLines, riskEscalation, peerContext].filter(Boolean).join('\n');
+      return [header, entityLines, obsLines, riskEscalation, peerContext]
+        .filter(Boolean)
+        .join('\n');
     })
     .join('\n\n');
 };
