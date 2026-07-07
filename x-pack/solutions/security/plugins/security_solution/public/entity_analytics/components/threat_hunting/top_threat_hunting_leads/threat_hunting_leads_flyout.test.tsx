@@ -101,11 +101,65 @@ describe('ThreatHuntingLeadsFlyout', () => {
     });
   });
 
-  it('renders the flyout with title "All Hunting Leads"', () => {
+  it('renders the flyout with title "Recent threat hunting leads"', () => {
     render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
 
     expect(screen.getByTestId('threatHuntingLeadsFlyout')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Threat hunting leads' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Recent threat hunting leads' })
+    ).toBeInTheDocument();
+  });
+
+  it('fetches leads with a perPage of 20 so the flyout is not artificially capped at 10', () => {
+    const mockFetchLeads = jest.fn().mockResolvedValue({ leads: [], total: 0 });
+    mockUseEntityAnalyticsRoutes.mockReturnValue({ fetchLeads: mockFetchLeads });
+    let capturedQueryFn: ((ctx: { signal?: AbortSignal }) => unknown) | undefined;
+    mockUseQuery.mockImplementation(
+      (config: { queryFn?: (ctx: { signal?: AbortSignal }) => unknown }) => {
+        capturedQueryFn = config.queryFn;
+        return { data: { leads: [createApiLead()], total: 1 }, isLoading: false };
+      }
+    );
+
+    render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
+    capturedQueryFn?.({ signal: undefined });
+
+    expect(mockFetchLeads).toHaveBeenCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({ perPage: 20 }),
+      })
+    );
+  });
+
+  it('renders a badge with the leads count beside the title', () => {
+    mockUseQuery.mockReturnValue({
+      data: { leads: [createApiLead(), createApiLead({ id: 'lead-2' })], total: 2 },
+      isLoading: false,
+    });
+
+    render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
+
+    expect(screen.getByTestId('leadsCountBadge')).toHaveTextContent('2');
+  });
+
+  it('does not render the leads count badge while loading', () => {
+    mockUseQuery.mockReturnValue({ data: undefined, isLoading: true });
+
+    render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
+
+    expect(screen.queryByTestId('leadsCountBadge')).not.toBeInTheDocument();
+  });
+
+  it('shows a no-matching-leads message when the search query matches nothing', () => {
+    render(<ThreatHuntingLeadsFlyout {...defaultProps} />);
+
+    fireEvent.change(screen.getByTestId('leadSearchField'), {
+      target: { value: 'nonexistent-query' },
+    });
+
+    expect(screen.getByTestId('noMatchingLeads')).toHaveTextContent(
+      'No hunting leads match your filter criteria'
+    );
   });
 
   it('close button calls onClose', () => {

@@ -15,6 +15,7 @@ import {
   EuiFlyoutHeader,
   EuiFlyoutResizable,
   EuiHorizontalRule,
+  EuiNotificationBadge,
   EuiPanel,
   EuiSkeletonRectangle,
   EuiSkeletonText,
@@ -32,7 +33,12 @@ import { fromApiLead } from './types';
 import * as i18n from './translations';
 import { LeadRiskBadge, renderTextWithEntities } from './shared_lead_components';
 import { useLeadEntityRiskScores } from './use_lead_entity_risk';
-import { resolveLeadRiskScore, THREAT_HUNTING_LEADS_SCOPE_ID, type LeadRiskScore } from './utils';
+import {
+  MAX_RECENT_LEADS,
+  resolveLeadRiskScore,
+  THREAT_HUNTING_LEADS_SCOPE_ID,
+  type LeadRiskScore,
+} from './utils';
 
 interface ThreatHuntingLeadsFlyoutProps {
   onClose: () => void;
@@ -74,7 +80,7 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
         signal,
         params: {
           page: 1,
-          perPage: 10,
+          perPage: MAX_RECENT_LEADS,
           sortField: 'priority',
           sortOrder: 'desc',
         },
@@ -105,9 +111,20 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
       data-test-subj="threatHuntingLeadsFlyout"
     >
       <EuiFlyoutHeader hasBorder>
-        <EuiTitle size="m">
-          <h2>{i18n.ALL_HUNTING_LEADS_TITLE}</h2>
-        </EuiTitle>
+        <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
+          <EuiFlexItem grow={false}>
+            <EuiTitle size="m">
+              <h2>{i18n.ALL_HUNTING_LEADS_TITLE}</h2>
+            </EuiTitle>
+          </EuiFlexItem>
+          {!isLoading && leads.length > 0 && (
+            <EuiFlexItem grow={false}>
+              <EuiNotificationBadge color="subdued" size="m" data-test-subj="leadsCountBadge">
+                {leads.length}
+              </EuiNotificationBadge>
+            </EuiFlexItem>
+          )}
+        </EuiFlexGroup>
         <EuiSpacer size="s" />
         <EuiText size="s" color="subdued">
           {i18n.ALL_HUNTING_LEADS_DESCRIPTION}
@@ -124,8 +141,9 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
           <EuiFlexItem grow={false}>
             <EuiButtonEmpty
               size="xs"
-              iconType="discoverApp"
+              iconType="external"
               flush="left"
+              iconSide="right"
               onClick={handleViewLeadsArchiveIndex}
               data-test-subj="viewLeadsArchiveIndexButton"
             >
@@ -163,21 +181,25 @@ export const ThreatHuntingLeadsFlyout: React.FC<ThreatHuntingLeadsFlyoutProps> =
               </EuiFlexItem>
             ))}
           </EuiFlexGroup>
+        ) : filteredLeads.length === 0 ? (
+          <EuiPanel color="subdued" data-test-subj="noMatchingLeads">
+            <EuiText size="s" color="subdued" textAlign="center">
+              {i18n.NO_MATCHING_LEADS}
+            </EuiText>
+          </EuiPanel>
         ) : (
-          <>
-            <EuiFlexGroup direction="column" gutterSize="s">
-              {filteredLeads.map((lead) => (
-                <EuiFlexItem key={lead.id}>
-                  <LeadListItem
-                    lead={lead}
-                    risk={resolveLeadRiskScore(lead, riskByEntityId)}
-                    isRiskLoading={isRiskLoading}
-                    onClick={onSelectLead}
-                  />
-                </EuiFlexItem>
-              ))}
-            </EuiFlexGroup>
-          </>
+          <EuiFlexGroup direction="column" gutterSize="s">
+            {filteredLeads.map((lead) => (
+              <EuiFlexItem key={lead.id}>
+                <LeadListItem
+                  lead={lead}
+                  risk={resolveLeadRiskScore(lead, riskByEntityId)}
+                  isRiskLoading={isRiskLoading}
+                  onClick={onSelectLead}
+                />
+              </EuiFlexItem>
+            ))}
+          </EuiFlexGroup>
         )}
       </EuiFlyoutBody>
     </EuiFlyoutResizable>

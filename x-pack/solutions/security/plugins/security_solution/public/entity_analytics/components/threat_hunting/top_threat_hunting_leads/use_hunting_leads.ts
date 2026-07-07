@@ -14,6 +14,7 @@ import { useEntityAnalyticsRoutes } from '../../../api/api';
 import { useLeadGenerationPrivileges } from '../../../api/hooks/use_lead_generation_privileges';
 import { fromApiLead } from './types';
 import * as i18n from './translations';
+import { MAX_RECENT_LEADS } from './utils';
 
 const HUNTING_LEADS_QUERY_KEY = 'hunting-leads';
 const LEAD_SCHEDULE_QUERY_KEY = 'lead-generation-status';
@@ -29,7 +30,7 @@ const isPermissionDenied = (error: unknown): boolean =>
 const FETCH_LEADS_PARAMS = {
   params: {
     page: 1 as const,
-    perPage: 10 as const,
+    perPage: MAX_RECENT_LEADS,
     sortField: 'priority' as const,
     sortOrder: 'desc' as const,
     status: 'active' as const,
@@ -168,7 +169,10 @@ export const useHuntingLeads = (connectorId: string, isEnabled: boolean = true) 
 
   return {
     leads: data?.leads?.map(fromApiLead) ?? [],
-    totalCount: data?.total ?? 0,
+    // `total` is a raw count unaffected by `perPage`, so clamp it to the same
+    // cap applied to the fetched leads to avoid the displayed count exceeding
+    // what a consumer (e.g. the flyout) can actually show.
+    totalCount: Math.min(data?.total ?? 0, MAX_RECENT_LEADS),
     isLoading,
     isGenerating,
     hasGenerated,

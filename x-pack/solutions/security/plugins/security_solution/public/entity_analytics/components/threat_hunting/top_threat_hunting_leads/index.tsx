@@ -6,6 +6,7 @@
  */
 
 import React, { useCallback, useState } from 'react';
+import useLocalStorage from 'react-use/lib/useLocalStorage';
 import {
   EuiButton,
   EuiButtonEmpty,
@@ -86,7 +87,11 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
   isAgentChatExperienceEnabled,
   hasWritePermissionError,
 }) => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [storedIsOpen, setStoredIsOpen] = useLocalStorage<boolean>(
+    'securitySolution.entityAnalytics.topThreatHuntingLeads.expanded',
+    true
+  );
+  const isOpen = storedIsOpen ?? true;
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const { euiTheme } = useEuiTheme();
 
@@ -106,7 +111,10 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
       : MAX_VISIBLE_CARDS;
   const toggleOptions = useCallback(() => setIsOptionsOpen((prev) => !prev), []);
   const closeOptions = useCallback(() => setIsOptionsOpen(false), []);
-  const toggleOpen = useCallback(() => setIsOpen((prev) => !prev), []);
+  const toggleOpen = useCallback(
+    () => setStoredIsOpen((prev) => !(prev ?? true)),
+    [setStoredIsOpen]
+  );
 
   const { getUrlForApp } = useKibana().services.application;
   const genAiSettingsUrl = getUrlForApp('management', { path: '/ai/genAiSettings' });

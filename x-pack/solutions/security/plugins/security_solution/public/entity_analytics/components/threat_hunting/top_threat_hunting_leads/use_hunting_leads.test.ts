@@ -90,7 +90,7 @@ describe('useHuntingLeads', () => {
       signal: mockSignal,
       params: {
         page: 1,
-        perPage: 10,
+        perPage: 20,
         sortField: 'priority',
         sortOrder: 'desc',
         status: 'active',
@@ -156,6 +156,18 @@ describe('useHuntingLeads', () => {
       sourceType: 'adhoc',
     });
     expect(result.current.totalCount).toBe(1);
+  });
+
+  it('clamps totalCount to the max recent leads cap even when the raw total exceeds it', () => {
+    mockUseQuery.mockReturnValue({
+      data: { leads: [], total: 150 },
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+
+    const { result } = renderHook(() => useHuntingLeads('test-connector-id'));
+
+    expect(result.current.totalCount).toBe(20);
   });
 
   it('generate function triggers mutation when called', () => {

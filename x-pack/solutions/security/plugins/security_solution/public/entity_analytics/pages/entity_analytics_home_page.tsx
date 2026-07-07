@@ -57,6 +57,7 @@ import { TopThreatHuntingLeads } from '../components/threat_hunting/top_threat_h
 import { ThreatHuntingLeadsFlyout } from '../components/threat_hunting/top_threat_hunting_leads/threat_hunting_leads_flyout';
 import { useHuntingLeads } from '../components/threat_hunting/top_threat_hunting_leads/use_hunting_leads';
 import { useLeadAttachment } from '../components/threat_hunting/top_threat_hunting_leads/use_lead_attachment';
+import { HUNT_WITH_AI_PROMPT } from '../../agent_builder/components/prompts';
 import { useAgentBuilderAvailability } from '../../agent_builder/hooks/use_agent_builder_availability';
 import type { HuntingLead } from '../components/threat_hunting/top_threat_hunting_leads/types';
 import { useMissingRiskEnginePrivileges } from '../hooks/use_missing_risk_engine_privileges';
@@ -224,7 +225,12 @@ const EntityAnalyticsHomePageContent = () => {
   );
 
   const handleHuntInChat = useCallback(() => {
-    agentBuilder?.openChat({ newConversation: true, sessionTag: 'security' });
+    agentBuilder?.openChat({
+      newConversation: true,
+      initialMessage: HUNT_WITH_AI_PROMPT,
+      autoSendInitialMessage: false,
+      sessionTag: 'security',
+    });
   }, [agentBuilder]);
 
   if (dataViewLoading) {

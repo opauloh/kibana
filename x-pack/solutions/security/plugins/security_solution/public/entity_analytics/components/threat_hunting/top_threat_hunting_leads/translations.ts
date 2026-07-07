@@ -6,6 +6,7 @@
  */
 
 import { i18n } from '@kbn/i18n';
+import { LEADS_INDEX_PATTERN } from '../../../../../common/entity_analytics/lead_generation/constants';
 
 export const TOP_THREAT_HUNTING_LEADS_TITLE = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.leads.title',
@@ -115,15 +116,20 @@ export const NO_DATA_DESCRIPTION = i18n.translate(
 
 export const ALL_HUNTING_LEADS_TITLE = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.leads.flyout.title',
-  { defaultMessage: 'Threat hunting leads' }
+  { defaultMessage: 'Recent threat hunting leads' }
 );
 
 export const ALL_HUNTING_LEADS_DESCRIPTION = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.leads.flyout.description',
   {
     defaultMessage:
-      'These are personalised hypotheses, based on your environment\u2019s entity data. Select a hunting lead to start investigating in the agent builder chat.',
+      "Explore personalized hypotheses defined and prioritized by AI based on your environment's entity data. Select a hunting lead to start an investigation in the Agent Builder chat.",
   }
+);
+
+export const NO_MATCHING_LEADS = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.threatHunting.leads.flyout.noMatchingLeads',
+  { defaultMessage: 'No hunting leads match your filter criteria' }
 );
 
 export const GENERATE_SUCCESS = i18n.translate(
@@ -224,7 +230,10 @@ export const SCHEDULE_UPDATE_ERROR = i18n.translate(
 
 export const GENERATE_DISABLED_NO_WRITE_PERMISSION_TOOLTIP = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.leads.generateDisabledNoWritePermissionTooltip',
-  { defaultMessage: "You don't have write access to the leads index" }
+  {
+    defaultMessage: "You don't have write access to the {index} index",
+    values: { index: LEADS_INDEX_PATTERN },
+  }
 );
 
 export const getStalenessLabel = (staleness: string): string => {
