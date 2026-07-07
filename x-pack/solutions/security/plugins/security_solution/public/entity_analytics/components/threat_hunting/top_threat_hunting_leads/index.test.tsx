@@ -143,7 +143,26 @@ describe('TopThreatHuntingLeads', () => {
     render(<TopThreatHuntingLeads {...defaultProps} hasGenerated />);
 
     expect(screen.getByTestId('leadsEmptyPrompt')).toBeInTheDocument();
-    expect(screen.getByText('No data found')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'No entities, risk scores, or alerts were found in the Entity Store. Check that your entity data is available and try again.'
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('renders the "generating" banner with the correct copy while actively generating leads', () => {
+    render(<TopThreatHuntingLeads {...defaultProps} isGenerating />);
+
+    expect(screen.getByTestId('leadsEmptyPrompt')).toBeInTheDocument();
+    expect(screen.getByText('Generating leads. This may take up to a minute.')).toBeInTheDocument();
+  });
+
+  it('renders the no-connector banner with the "Enable AI Agent" copy', () => {
+    render(<TopThreatHuntingLeads {...defaultProps} isAgentChatExperienceEnabled={false} />);
+
+    expect(
+      screen.getByText('Enable AI Agent as your default chat experience to start generating leads')
+    ).toBeInTheDocument();
   });
 
   it('renders skeleton loading state while leads are being fetched', () => {
@@ -231,16 +250,19 @@ describe('TopThreatHuntingLeads', () => {
 
     const generateButton = screen.getByTestId('generateLeadsButton');
     expect(generateButton).toBeInTheDocument();
+    expect(generateButton).toHaveTextContent('Generate');
     expect(screen.queryByTestId('refreshLeadsButton')).not.toBeInTheDocument();
 
     fireEvent.click(generateButton);
     expect(onGenerate).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps "Generate" button when generation produced no leads', () => {
+  it('shows "Regenerate" action (not "Generate") in the no-data banner when generation produced no leads', () => {
     render(<TopThreatHuntingLeads {...defaultProps} hasGenerated />);
 
-    expect(screen.getByTestId('generateLeadsButton')).toBeInTheDocument();
+    const button = screen.getByTestId('generateLeadsButton');
+    expect(button).toBeInTheDocument();
+    expect(button).toHaveTextContent('Regenerate');
     expect(screen.queryByTestId('refreshLeadsButton')).not.toBeInTheDocument();
   });
 

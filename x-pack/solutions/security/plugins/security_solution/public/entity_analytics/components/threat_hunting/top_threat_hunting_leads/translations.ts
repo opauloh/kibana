@@ -13,6 +13,19 @@ export const TOP_THREAT_HUNTING_LEADS_TITLE = i18n.translate(
   { defaultMessage: 'Top threat hunting leads' }
 );
 
+export const THREAT_HUNTING_LEADS_BANNER_TITLE = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.threatHunting.leads.bannerTitle',
+  { defaultMessage: 'Threat hunting leads' }
+);
+
+export const TECH_PREVIEW_TOOLTIP = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.threatHunting.leads.techPreviewTooltip',
+  {
+    defaultMessage:
+      'This functionality is in technical preview and may be changed or removed completely in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.',
+  }
+);
+
 export const GENERATE_LEADS = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.leads.generate',
   { defaultMessage: 'Generate' }
@@ -55,7 +68,7 @@ export const GENERATING_LEADS = i18n.translate(
 
 export const GENERATING_LEADS_DESCRIPTION = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.leads.generatingDescription',
-  { defaultMessage: 'Generating threat hunting leads. It might take up to 1 min.' }
+  { defaultMessage: 'Generating leads. This may take up to a minute.' }
 );
 
 export const HUNT_WITH_AI = i18n.translate(
@@ -101,16 +114,11 @@ export const NO_LEADS_DESCRIPTION = i18n.translate(
   }
 );
 
-export const NO_DATA_TITLE = i18n.translate(
-  'xpack.securitySolution.entityAnalytics.threatHunting.leads.noDataTitle',
-  { defaultMessage: 'No data found' }
-);
-
 export const NO_DATA_DESCRIPTION = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.leads.noDataDescription',
   {
     defaultMessage:
-      'No entities, risk scores, or alerts were found to generate hunting leads. Ensure the Entity Store and risk score maintainer are enabled with data available.',
+      'No entities, risk scores, or alerts were found in the Entity Store. Check that your entity data is available and try again.',
   }
 );
 
@@ -218,8 +226,7 @@ export const OPEN_GENAI_SETTINGS = i18n.translate(
 export const NO_CONNECTOR_DESCRIPTION = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.noConnectorDescription',
   {
-    defaultMessage:
-      'Enable AI Agent as your default chat experience to start generating threat hunting leads from your entity data',
+    defaultMessage: 'Enable AI Agent as your default chat experience to start generating leads',
   }
 );
 

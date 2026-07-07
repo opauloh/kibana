@@ -164,7 +164,7 @@ const EntityAnalyticsHomePageContent = () => {
     toggleSchedule,
     readPermissionError: leadsReadPermissionError,
     writePermissionError: leadsWritePermissionError,
-  } = useHuntingLeads(connectorId, leadGenerationEnabled);
+  } = useHuntingLeads(connectorId, leadGenerationEnabled, resolvedSpaceId);
   const openAgentBuilderWithLead = useLeadAttachment();
 
   const [isFlyoutOpen, setIsFlyoutOpen] = useState(false);

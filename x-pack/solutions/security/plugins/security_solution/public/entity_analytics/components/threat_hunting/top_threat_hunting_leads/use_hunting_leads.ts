@@ -37,7 +37,63 @@ const FETCH_LEADS_PARAMS = {
   },
 };
 
-export const useHuntingLeads = (connectorId: string, isEnabled: boolean = true) => {
+// ---------------------------------------------------------------------------
+// Reload-resume: persists the currently in-flight generation's executionUuid
+// so that reloading the page while a run is still going doesn't drop the
+// "Generating..." UI. This is a client-only, best-effort mechanism (scoped to
+// the current browser via localStorage): it does not survive a different
+// browser/device, and it can't detect generations triggered from chat.
+// ---------------------------------------------------------------------------
+
+const IN_FLIGHT_STORAGE_KEY_PREFIX = 'securitySolution.entityAnalytics.leadGeneration.inFlight';
+// A run should normally finish within the ~1 min the UI advertises; treat
+// anything older than this as abandoned rather than resuming it forever.
+const IN_FLIGHT_STALE_MS = 5 * 60 * 1000;
+
+interface InFlightGeneration {
+  executionUuid: string;
+  startedAt: number;
+}
+
+const getInFlightStorageKey = (spaceId: string): string =>
+  `${IN_FLIGHT_STORAGE_KEY_PREFIX}.${spaceId}`;
+
+const readInFlightGeneration = (spaceId: string): InFlightGeneration | null => {
+  try {
+    const raw = localStorage.getItem(getInFlightStorageKey(spaceId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<InFlightGeneration>;
+    if (typeof parsed.executionUuid !== 'string' || typeof parsed.startedAt !== 'number') {
+      return null;
+    }
+    return { executionUuid: parsed.executionUuid, startedAt: parsed.startedAt };
+  } catch {
+    return null;
+  }
+};
+
+const writeInFlightGeneration = (spaceId: string, entry: InFlightGeneration): void => {
+  try {
+    localStorage.setItem(getInFlightStorageKey(spaceId), JSON.stringify(entry));
+  } catch {
+    // localStorage may be unavailable (e.g. private browsing); resuming after
+    // a reload is a best-effort enhancement, so failures here are ignored.
+  }
+};
+
+const clearInFlightGeneration = (spaceId: string): void => {
+  try {
+    localStorage.removeItem(getInFlightStorageKey(spaceId));
+  } catch {
+    // See writeInFlightGeneration.
+  }
+};
+
+export const useHuntingLeads = (
+  connectorId: string,
+  isEnabled: boolean = true,
+  spaceId: string = 'default'
+) => {
   const {
     fetchLeads,
     generateLeads: generateLeadsApi,
@@ -52,6 +108,8 @@ export const useHuntingLeads = (connectorId: string, isEnabled: boolean = true) 
   const [hasGenerated, setHasGenerated] = useState(false);
   const [readPermissionError, setReadPermissionError] = useState(false);
   const [writePermissionError, setWritePermissionError] = useState(false);
+  const [isResuming, setIsResuming] = useState(false);
+  const hasCheckedResumeRef = useRef(false);
 
   const { data: privileges } = useLeadGenerationPrivileges(isEnabled);
 
@@ -119,13 +177,14 @@ export const useHuntingLeads = (connectorId: string, isEnabled: boolean = true) 
     [fetchLeadGenerationStatus, fetchLeads, queryClient]
   );
 
-  const { mutate: generate, isLoading: isGenerating } = useMutation({
+  const { mutate: generate, isLoading: isGeneratingMutation } = useMutation({
     mutationFn: async () => {
       abortCtrl.current = new AbortController();
       const { signal } = abortCtrl.current;
 
       telemetry.reportEvent(EntityEventTypes.LeadGenerationGenerateClicked, {});
       const { executionUuid } = await generateLeadsApi({ params: { connectorId }, signal });
+      writeInFlightGeneration(spaceId, { executionUuid, startedAt: Date.now() });
       return pollForCompletion(executionUuid, signal);
     },
     onSuccess: (result) => {
@@ -143,6 +202,9 @@ export const useHuntingLeads = (connectorId: string, isEnabled: boolean = true) 
         addError(error, { title: i18n.GENERATE_ERROR });
       }
     },
+    onSettled: () => {
+      clearInFlightGeneration(spaceId);
+    },
   });
 
   const { data: statusData, isLoading: isStatusLoading } = useQuery({
@@ -158,6 +220,47 @@ export const useHuntingLeads = (connectorId: string, isEnabled: boolean = true) 
     },
   });
 
+  // On mount, resume tracking a generation run that was still in progress
+  // before the page was reloaded (see the "Reload-resume" note above). This
+  // only runs once, after the status query settles.
+  useEffect(() => {
+    if (!isEnabled || hasCheckedResumeRef.current || isStatusLoading || !statusData) {
+      return;
+    }
+    hasCheckedResumeRef.current = true;
+
+    const stored = readInFlightGeneration(spaceId);
+    if (!stored) return;
+
+    if (Date.now() - stored.startedAt > IN_FLIGHT_STALE_MS) {
+      clearInFlightGeneration(spaceId);
+      return;
+    }
+
+    if (statusData.lastExecutionUuid === stored.executionUuid) {
+      // The run already finished (successfully or not) while we were away.
+      clearInFlightGeneration(spaceId);
+      return;
+    }
+
+    abortCtrl.current = new AbortController();
+    const { signal } = abortCtrl.current;
+    setIsResuming(true);
+    pollForCompletion(stored.executionUuid, signal)
+      .then(() => {
+        setHasGenerated(true);
+      })
+      .catch((error: Error) => {
+        if (!isPermissionDenied(error)) {
+          addError(error, { title: i18n.GENERATE_ERROR });
+        }
+      })
+      .finally(() => {
+        clearInFlightGeneration(spaceId);
+        setIsResuming(false);
+      });
+  }, [isEnabled, isStatusLoading, statusData, spaceId, pollForCompletion, addError]);
+
   const { mutate: toggleSchedule } = useMutation({
     mutationFn: (enabled: boolean) =>
       enabled ? enableLeadGeneration({ connectorId }) : disableLeadGeneration(),
@@ -166,6 +269,7 @@ export const useHuntingLeads = (connectorId: string, isEnabled: boolean = true) 
   });
 
   const isLoading = isLeadsLoading || isStatusLoading;
+  const isGenerating = isGeneratingMutation || isResuming;
 
   return {
     leads: data?.leads?.map(fromApiLead) ?? [],
