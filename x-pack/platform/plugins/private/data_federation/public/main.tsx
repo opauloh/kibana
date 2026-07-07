@@ -11,6 +11,7 @@ import type { EuiBasicTableColumn, EuiTabbedContentTab } from '@elastic/eui';
 import {
   EuiBetaBadge,
   EuiButton,
+  EuiButtonIcon,
   EuiFlexGroup,
   EuiFlexItem,
   EuiInMemoryTable,
@@ -20,10 +21,16 @@ import {
   EuiSelect,
   EuiSpacer,
   EuiTabbedContent,
+  EuiToolTip,
 } from '@elastic/eui';
 
 import type { HttpSetup, ToastsStart } from '@kbn/core/public';
-import type { DataSetWithName, DataSourceWithSecrets, DataSource } from '../common';
+import {
+  ALL_DATA_SOURCE_TYPES,
+  type DataSetWithName,
+  type DataSourceWithSecrets,
+  type DataSource,
+} from '../common';
 import type { FederatedIdentityClusterInfo } from './create_data_source_flyout/federated_identity_cluster_info';
 import { CreateDatasetFlyout } from './create_dataset_flyout';
 import { dataSetFromListItem } from './create_dataset_flyout/dataset_flyout_initial_values';
@@ -445,26 +452,57 @@ export const Main: FunctionComponent<MainProps> = ({
         width: '8%',
         actions: [
           {
-            name: mainTranslations.columns.dataSources.editAction,
-            description: mainTranslations.columns.dataSources.editActionDescription,
-            icon: 'pencil',
-            type: 'icon',
-            onClick: (item) => {
-              handleEditDataSource(item);
-            },
-            'data-test-subj': 'dataSetsEditButton',
+            enabled: (item) => ALL_DATA_SOURCE_TYPES.includes(item.type),
+            render: (item: DataSource, isSupportedType: boolean) => (
+              // EUI's default item action can't show a tooltip on a disabled icon button
+              // (aria-disabled sets pointer-events: none, which blocks hover), so this
+              // wraps the button manually to explain why editing is disabled.
+              <EuiToolTip
+                content={
+                  isSupportedType
+                    ? mainTranslations.columns.dataSources.editActionDescription
+                    : mainTranslations.columns.dataSources.editActionUnsupportedTypeDescription
+                }
+              >
+                <span>
+                  <EuiButtonIcon
+                    aria-label={mainTranslations.columns.dataSources.editAction}
+                    iconType="pencil"
+                    isDisabled={!isSupportedType}
+                    onClick={() => handleEditDataSource(item)}
+                    data-test-subj="dataSetsEditButton"
+                  />
+                </span>
+              </EuiToolTip>
+            ),
           },
           {
-            name: mainTranslations.columns.dataSources.deleteAction,
-            description: mainTranslations.columns.dataSources.deleteActionDescription,
-            icon: 'trash',
-            color: 'danger',
-            type: 'icon',
-            enabled: (item) => (dataSetsCountByDataSource.get(item.name) ?? 0) === 0,
-            onClick: (item) => {
-              handleDeleteDataSource(item);
+            // Same limitation as the edit action above: EUI can't show a tooltip on a
+            // disabled default action icon, so this renders the button manually to explain
+            // why deleting is disabled.
+            render: (item: DataSource) => {
+              const hasDataSets = (dataSetsCountByDataSource.get(item.name) ?? 0) > 0;
+              return (
+                <EuiToolTip
+                  content={
+                    hasDataSets
+                      ? mainTranslations.columns.dataSources.deleteActionHasDataSetsDescription
+                      : mainTranslations.columns.dataSources.deleteActionDescription
+                  }
+                >
+                  <span>
+                    <EuiButtonIcon
+                      aria-label={mainTranslations.columns.dataSources.deleteAction}
+                      iconType="trash"
+                      color="danger"
+                      isDisabled={hasDataSets}
+                      onClick={() => handleDeleteDataSource(item)}
+                      data-test-subj="dataSetsDeleteIconButton"
+                    />
+                  </span>
+                </EuiToolTip>
+              );
             },
-            'data-test-subj': 'dataSetsDeleteIconButton',
           },
         ],
       },
@@ -684,6 +722,10 @@ export const Main: FunctionComponent<MainProps> = ({
                 selected: selectedItems,
                 onSelectionChange: setSelectedItems,
                 selectable: (row) => (dataSetsCountByDataSource.get(row.name) ?? 0) === 0,
+                selectableMessage: (selectable) =>
+                  selectable
+                    ? ''
+                    : mainTranslations.columns.dataSources.deleteActionHasDataSetsDescription,
               }}
               sorting
               pagination={{
