@@ -145,6 +145,7 @@ describe('anomaly_detection_module', () => {
             buckets: [
               {
                 key: 'user:alice',
+                doc_count: 1,
                 max_score: { value: 88 },
                 top: {
                   hits: {
@@ -187,6 +188,51 @@ describe('anomaly_detection_module', () => {
       expect(summary?.anomalyCount).toBe(1);
       expect(summary?.topAnomalies[0].detectorFunction).toBe('high_distinct_count');
       expect(summary?.topAnomalies[0].actual).toBe(42);
+    });
+
+    it('reports the full-bucket anomaly count, not the capped top-hits list', async () => {
+      mockGetSecurityMlJobIds.mockResolvedValue(['job-1']);
+      const makeHit = (score: number) => ({
+        _source: {
+          job_id: 'job-1',
+          function: 'high_count',
+          record_score: score,
+          timestamp: 1_700_000_000_000,
+          by_field_name: 'event.action',
+          by_field_value: 'logon',
+        },
+      });
+      const mlAnomalySearch = jest.fn().mockResolvedValue({
+        aggregations: {
+          by_entity: {
+            buckets: [
+              {
+                key: 'user:alice',
+                // Terms bucket total for the filtered query far exceeds the
+                // number of records retained by the top-hits sub-aggregation.
+                doc_count: 40,
+                max_score: { value: 95 },
+                top: { hits: { hits: [makeHit(95), makeHit(80), makeHit(70)] } },
+              },
+            ],
+          },
+        },
+      });
+      const ml = {
+        mlSystemProvider: jest.fn().mockReturnValue({ mlAnomalySearch }),
+      } as unknown as MlPluginSetup;
+
+      const result = await fetchAnomalySummariesForEntities({
+        ml,
+        request: fakeRequest,
+        soClient: fakeSoClient,
+        entities: [buildEntity('user', 'alice')],
+        logger,
+      });
+
+      const summary = result.get('user:alice');
+      expect(summary?.anomalyCount).toBe(40);
+      expect(summary?.topAnomalies).toHaveLength(3);
     });
 
     it('swallows search errors and continues', async () => {

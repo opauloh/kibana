@@ -34,6 +34,7 @@ interface FetchAnomalySummariesDeps {
 
 interface AnomalyEntityBucket {
   key: string;
+  doc_count: number;
   max_score?: { value: number | null };
   top: { hits: { hits: Array<{ _source?: RawAnomalyRecord }> } };
 }
@@ -188,7 +189,9 @@ const searchAnomalyBucketsForType = async ({
         bucket.key,
         {
           maxRecordScore: bucket.max_score?.value ?? topAnomalies[0].recordScore,
-          anomalyCount: topAnomalies.length,
+          // Full-bucket total of qualifying anomaly records, not the capped
+          // top-hits detail list — keeps scope consistent with maxRecordScore.
+          anomalyCount: bucket.doc_count,
           topAnomalies,
         },
       ],
