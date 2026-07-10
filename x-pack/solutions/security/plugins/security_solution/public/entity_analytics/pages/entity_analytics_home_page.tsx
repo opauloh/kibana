@@ -20,6 +20,7 @@ import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { useLoadConnectors } from '@kbn/inference-connectors';
+import { GEN_AI_SETTINGS_DEFAULT_AI_CONNECTOR } from '@kbn/management-settings-ids';
 import { useQueryClient } from '@kbn/react-query';
 import { useOnAssetCriticalityToolEvent } from '../hooks/use_on_asset_criticality_tool_event';
 import { SecurityPageName } from '../../app/types';
@@ -135,7 +136,7 @@ export const EntityAnalyticsHomePage = () => {
 };
 
 const EntityAnalyticsHomePageContent = () => {
-  const { telemetry, agentBuilder, http } = useKibana().services;
+  const { telemetry, agentBuilder, http, settings } = useKibana().services;
   const { isAgentChatExperienceEnabled } = useAgentBuilderAvailability();
   const queryClient = useQueryClient();
 
@@ -152,8 +153,20 @@ const EntityAnalyticsHomePageContent = () => {
 
   const resolvedSpaceId = spaceId ?? 'default';
   const [storedConnectorId, setStoredConnectorId] = useStoredAssistantConnectorId(resolvedSpaceId);
-  const connectorId = spaceId ? storedConnectorId ?? '' : '';
-  const hasValidConnector = !!availableConnectors?.find((c) => c.id === connectorId);
+  const defaultConnectorId = settings.client.get<string | undefined>(
+    GEN_AI_SETTINGS_DEFAULT_AI_CONNECTOR,
+    undefined
+  );
+  const connectorId = useMemo(() => {
+    const storedConnectorCandidate = spaceId ? storedConnectorId : undefined;
+    const candidates = [storedConnectorCandidate, defaultConnectorId];
+
+    return (
+      candidates.find((id) => id && availableConnectors?.some((connector) => connector.id === id)) ??
+      ''
+    );
+  }, [availableConnectors, defaultConnectorId, spaceId, storedConnectorId]);
+  const hasValidConnector = connectorId !== '';
   const safeSetConnectorId = useCallback(
     (id: string | undefined) => {
       if (spaceId) {

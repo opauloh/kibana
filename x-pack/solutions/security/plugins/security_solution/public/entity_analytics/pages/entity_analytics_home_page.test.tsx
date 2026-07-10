@@ -8,6 +8,8 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { useLoadConnectors } from '@kbn/inference-connectors';
+import { GEN_AI_SETTINGS_DEFAULT_AI_CONNECTOR } from '@kbn/management-settings-ids';
 import { EntityAnalyticsHomePage } from './entity_analytics_home_page';
 import { TestProviders, kibanaMock } from '../../common/mock';
 import { useIsExperimentalFeatureEnabled } from '../../common/hooks/use_experimental_features';
@@ -20,6 +22,7 @@ import { useEntityStoreDataView } from '../components/home/use_entity_store_data
 import { HUNT_WITH_AI_PROMPT } from '../prompts';
 import { EntityEventTypes } from '../../common/lib/telemetry';
 import type { StartServices } from '../../types';
+import { useStoredAssistantConnectorId } from '../../onboarding/components/hooks/use_stored_state';
 
 jest.mock('../../common/components/links/link_props', () => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -52,6 +55,9 @@ jest.mock('../../common/hooks/use_experimental_features', () => ({
 }));
 
 jest.mock('../../common/hooks/use_license');
+jest.mock('@kbn/inference-connectors', () => ({
+  useLoadConnectors: jest.fn(() => ({ data: [] })),
+}));
 
 jest.mock('../../data_view_manager/hooks/use_data_view', () => ({
   useDataView: jest.fn(() => ({
@@ -182,6 +188,8 @@ const mockUseMissingRiskEnginePrivileges = useMissingRiskEnginePrivileges as jes
 const mockUseEntityEnginePrivileges = useEntityEnginePrivileges as jest.Mock;
 const mockUseLeadGenerationPrivileges = useLeadGenerationPrivileges as jest.Mock;
 const mockUseHuntingLeads = useHuntingLeads as jest.Mock;
+const mockUseLoadConnectors = useLoadConnectors as jest.Mock;
+const mockUseStoredAssistantConnectorId = useStoredAssistantConnectorId as jest.Mock;
 
 describe('EntityAnalyticsHomePage', () => {
   beforeEach(() => {
@@ -229,6 +237,9 @@ describe('EntityAnalyticsHomePage', () => {
       readPermissionError: false,
       writePermissionError: false,
     });
+
+    mockUseLoadConnectors.mockReturnValue({ data: [] });
+    mockUseStoredAssistantConnectorId.mockReturnValue(['', jest.fn()]);
   });
 
   it('renders the page title', () => {
@@ -632,5 +643,107 @@ describe('EntityAnalyticsHomePage', () => {
       autoSendInitialMessage: false,
       sessionTag: 'security',
     });
+  });
+
+  it('prefers the stored connector over global default connector when both are valid', () => {
+    mockUseStoredAssistantConnectorId.mockReturnValue(['stored-connector-id', jest.fn()]);
+    mockUseLoadConnectors.mockReturnValue({
+      data: [{ id: 'stored-connector-id' }, { id: 'global-connector-id' }],
+    });
+
+    const startServices = {
+      ...kibanaMock,
+      settings: {
+        ...kibanaMock.settings,
+        client: {
+          ...kibanaMock.settings.client,
+          get: jest.fn((settingKey: string, defaultValue?: unknown) =>
+            settingKey === GEN_AI_SETTINGS_DEFAULT_AI_CONNECTOR
+              ? 'global-connector-id'
+              : defaultValue
+          ),
+        },
+      },
+    } as unknown as StartServices;
+
+    render(
+      <MemoryRouter>
+        <EntityAnalyticsHomePage />
+      </MemoryRouter>,
+      {
+        wrapper: ({ children }) => (
+          <TestProviders startServices={startServices}>{children}</TestProviders>
+        ),
+      }
+    );
+
+    const latestHookCall = mockUseHuntingLeads.mock.calls.at(-1);
+    expect(latestHookCall?.[0]).toBe('stored-connector-id');
+  });
+
+  it('falls back to global default connector when no stored connector is set', () => {
+    mockUseStoredAssistantConnectorId.mockReturnValue(['', jest.fn()]);
+    mockUseLoadConnectors.mockReturnValue({ data: [{ id: 'global-connector-id' }] });
+
+    const startServices = {
+      ...kibanaMock,
+      settings: {
+        ...kibanaMock.settings,
+        client: {
+          ...kibanaMock.settings.client,
+          get: jest.fn((settingKey: string, defaultValue?: unknown) =>
+            settingKey === GEN_AI_SETTINGS_DEFAULT_AI_CONNECTOR
+              ? 'global-connector-id'
+              : defaultValue
+          ),
+        },
+      },
+    } as unknown as StartServices;
+
+    render(
+      <MemoryRouter>
+        <EntityAnalyticsHomePage />
+      </MemoryRouter>,
+      {
+        wrapper: ({ children }) => (
+          <TestProviders startServices={startServices}>{children}</TestProviders>
+        ),
+      }
+    );
+
+    const latestHookCall = mockUseHuntingLeads.mock.calls.at(-1);
+    expect(latestHookCall?.[0]).toBe('global-connector-id');
+  });
+
+  it('does not fall back to the first available connector when stored and global defaults are unset', () => {
+    mockUseStoredAssistantConnectorId.mockReturnValue(['', jest.fn()]);
+    mockUseLoadConnectors.mockReturnValue({ data: [{ id: 'arbitrary-connector-id' }] });
+
+    const startServices = {
+      ...kibanaMock,
+      settings: {
+        ...kibanaMock.settings,
+        client: {
+          ...kibanaMock.settings.client,
+          get: jest.fn((settingKey: string, defaultValue?: unknown) =>
+            settingKey === GEN_AI_SETTINGS_DEFAULT_AI_CONNECTOR ? undefined : defaultValue
+          ),
+        },
+      },
+    } as unknown as StartServices;
+
+    render(
+      <MemoryRouter>
+        <EntityAnalyticsHomePage />
+      </MemoryRouter>,
+      {
+        wrapper: ({ children }) => (
+          <TestProviders startServices={startServices}>{children}</TestProviders>
+        ),
+      }
+    );
+
+    const latestHookCall = mockUseHuntingLeads.mock.calls.at(-1);
+    expect(latestHookCall?.[0]).toBe('');
   });
 });
