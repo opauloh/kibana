@@ -232,7 +232,7 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
       : hasGenerated
       ? i18n.NO_DATA_DESCRIPTION
       : isAgentChatExperienceDisabled
-      ? i18n.NO_CONNECTOR_DESCRIPTION
+      ? i18n.NO_AGENT_CHAT_EXPERIENCE_DESCRIPTION
       : hasNoConnectorSelected
       ? i18n.NO_CONNECTOR_SELECTED_DESCRIPTION
       : i18n.NO_LEADS_DESCRIPTION;

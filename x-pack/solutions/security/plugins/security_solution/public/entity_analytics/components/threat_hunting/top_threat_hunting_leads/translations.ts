@@ -218,8 +218,8 @@ export const OPEN_GENAI_SETTINGS = i18n.translate(
   { defaultMessage: 'Open GenAI settings' }
 );
 
-export const NO_CONNECTOR_DESCRIPTION = i18n.translate(
-  'xpack.securitySolution.entityAnalytics.threatHunting.noConnectorDescription',
+export const NO_AGENT_CHAT_EXPERIENCE_DESCRIPTION = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.threatHunting.noAgentChatExperienceDescription',
   {
     defaultMessage: 'Enable AI Agent as your default chat experience to start generating leads',
   }
