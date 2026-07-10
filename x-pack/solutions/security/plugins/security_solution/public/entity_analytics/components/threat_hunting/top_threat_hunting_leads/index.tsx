@@ -310,9 +310,7 @@ export const TopThreatHuntingLeads: React.FC<TopThreatHuntingLeadsProps> = ({
             )}
             {leads.length > 0 && (
               <EuiFlexItem grow={false}>
-                <EuiToolTip
-                  content={generateTooltipContent}
-                >
+                <EuiToolTip content={generateTooltipContent}>
                   <EuiButtonEmpty
                     size="s"
                     iconType="refresh"
