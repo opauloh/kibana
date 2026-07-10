@@ -207,11 +207,13 @@ describe('TopThreatHuntingLeads', () => {
     expect(screen.queryByTestId('generateLeadsButton')).not.toBeInTheDocument();
   });
 
-  it('shows disabled "Generate" and Options under Agent experience when no valid connector is selected', () => {
+  it('shows disabled "Generate" and Options under Agent experience when no connector is available', () => {
     render(<TopThreatHuntingLeads {...defaultProps} connectorId="" hasValidConnector={false} />);
 
     expect(
-      screen.getByText('Select a connector from Options to start generating leads')
+      screen.getByText(
+        'No AI connector configured. Add a connector in Options to start generating leads'
+      )
     ).toBeInTheDocument();
     expect(screen.queryByTestId('openGenAiSettingsButton')).not.toBeInTheDocument();
 

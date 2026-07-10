@@ -228,7 +228,8 @@ export const NO_CONNECTOR_DESCRIPTION = i18n.translate(
 export const NO_CONNECTOR_SELECTED_DESCRIPTION = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.noConnectorSelectedDescription',
   {
-    defaultMessage: 'Select a connector from Options to start generating leads',
+    defaultMessage:
+      'No AI connector configured. Add a connector in Options to start generating leads',
   }
 );
 
@@ -247,7 +248,7 @@ export const GENERATE_DISABLED_NO_WRITE_PERMISSION_TOOLTIP = i18n.translate(
 
 export const GENERATE_DISABLED_NO_CONNECTOR_TOOLTIP = i18n.translate(
   'xpack.securitySolution.entityAnalytics.threatHunting.leads.generateDisabledNoConnectorTooltip',
-  { defaultMessage: 'Select a connector from Options to enable lead generation' }
+  { defaultMessage: 'Add a connector in Options to enable lead generation' }
 );
 
 export const getStalenessLabel = (staleness: string): string => {

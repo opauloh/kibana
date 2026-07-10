@@ -20,7 +20,6 @@ import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { useLoadConnectors } from '@kbn/inference-connectors';
-import { GEN_AI_SETTINGS_DEFAULT_AI_CONNECTOR } from '@kbn/management-settings-ids';
 import { useQueryClient } from '@kbn/react-query';
 import { useOnAssetCriticalityToolEvent } from '../hooks/use_on_asset_criticality_tool_event';
 import { SecurityPageName } from '../../app/types';
@@ -136,7 +135,7 @@ export const EntityAnalyticsHomePage = () => {
 };
 
 const EntityAnalyticsHomePageContent = () => {
-  const { telemetry, agentBuilder, http, settings } = useKibana().services;
+  const { telemetry, agentBuilder, http } = useKibana().services;
   const { isAgentChatExperienceEnabled } = useAgentBuilderAvailability();
   const queryClient = useQueryClient();
 
@@ -153,19 +152,21 @@ const EntityAnalyticsHomePageContent = () => {
 
   const resolvedSpaceId = spaceId ?? 'default';
   const [storedConnectorId, setStoredConnectorId] = useStoredAssistantConnectorId(resolvedSpaceId);
-  const defaultConnectorId = settings.client.get<string | undefined>(
-    GEN_AI_SETTINGS_DEFAULT_AI_CONNECTOR,
-    undefined
-  );
+  // Mirror the entity details flyout "Generate" behavior: prefer the stored
+  // Options selection when it is still valid, otherwise fall back to the first
+  // connector resolved for the lead_generation feature. The server orders that
+  // list by Feature Settings (a feature-specific override, else the Global
+  // model), so the fallback follows those settings rather than an arbitrary
+  // pick. Only when no connector exists at all does this resolve to ''.
   const connectorId = useMemo(() => {
-    const storedConnectorCandidate = spaceId ? storedConnectorId : undefined;
-    const candidates = [storedConnectorCandidate, defaultConnectorId];
-
-    return (
-      candidates.find((id) => id && availableConnectors?.some((connector) => connector.id === id)) ??
-      ''
-    );
-  }, [availableConnectors, defaultConnectorId, spaceId, storedConnectorId]);
+    if (!availableConnectors?.length) {
+      return '';
+    }
+    const storedConnector = spaceId
+      ? availableConnectors.find((connector) => connector.id === storedConnectorId)
+      : undefined;
+    return storedConnector?.id ?? availableConnectors[0]?.id ?? '';
+  }, [availableConnectors, spaceId, storedConnectorId]);
   const hasValidConnector = connectorId !== '';
   const safeSetConnectorId = useCallback(
     (id: string | undefined) => {
