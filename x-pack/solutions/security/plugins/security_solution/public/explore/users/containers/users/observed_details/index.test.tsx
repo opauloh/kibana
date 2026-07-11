@@ -206,6 +206,123 @@ describe('useUserDetails', () => {
     );
   });
 
+  it('does not run search while the entity-store record is loading and no record is available yet', () => {
+    mockUseUiSetting.mockReturnValue(true);
+    mockUseEntityStoreEuidApi.mockReturnValue({ euid: {} });
+
+    renderHook(() => useObservedUserDetails({ ...defaultProps, entityStoreLoading: true }), {
+      wrapper: TestProviders,
+    });
+
+    expect(mockSearch).not.toHaveBeenCalled();
+  });
+
+  it('runs the scoped search when a record is present even while entityStoreLoading is true', () => {
+    mockUseUiSetting.mockReturnValue(true);
+    const recordFilter = { bool: { filter: [{ term: { 'user.id': 'abc' } }] } };
+    const getEuidFilterBasedOnEntityRecord = jest.fn().mockReturnValue(recordFilter);
+    mockUseEntityStoreEuidApi.mockReturnValue({
+      euid: { dsl: { getEuidFilterBasedOnEntityRecord } },
+    });
+
+    const entityRecord = {
+      entity: { id: 'user:abc', namespace: 'cloud_asset_inventory' },
+      user: { id: 'abc' },
+    };
+
+    renderHook(
+      () =>
+        useObservedUserDetails({
+          ...defaultProps,
+          entityId: 'user:abc',
+          entityRecord: entityRecord as never,
+          entityStoreLoading: true,
+        }),
+      { wrapper: TestProviders }
+    );
+
+    expect(mockSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterQuery: JSON.stringify({
+          bool: { must: [recordFilter, NOT_EVENT_KIND_ASSET_FILTER] },
+        }),
+      })
+    );
+  });
+
+  it('runs the scoped record-based search once the entity-store record has resolved', () => {
+    mockUseUiSetting.mockReturnValue(true);
+    const recordFilter = { bool: { filter: [{ term: { 'user.id': 'abc' } }] } };
+    const getEuidFilterBasedOnEntityRecord = jest.fn().mockReturnValue(recordFilter);
+    mockUseEntityStoreEuidApi.mockReturnValue({
+      euid: { dsl: { getEuidFilterBasedOnEntityRecord } },
+    });
+
+    const entityRecord = {
+      entity: { id: 'user:abc', namespace: 'cloud_asset_inventory' },
+      user: { id: 'abc' },
+    };
+
+    renderHook(
+      () =>
+        useObservedUserDetails({
+          ...defaultProps,
+          entityId: 'user:abc',
+          entityRecord: entityRecord as never,
+          entityStoreLoading: false,
+        }),
+      { wrapper: TestProviders }
+    );
+
+    expect(mockSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterQuery: JSON.stringify({
+          bool: { must: [recordFilter, NOT_EVENT_KIND_ASSET_FILTER] },
+        }),
+      })
+    );
+  });
+
+  it('runs the user.name fallback once the store has resolved with no record', () => {
+    mockUseUiSetting.mockReturnValue(true);
+    mockUseEntityStoreEuidApi.mockReturnValue({ euid: {} });
+
+    renderHook(
+      () =>
+        useObservedUserDetails({
+          ...defaultProps,
+          entityId: undefined,
+          entityRecord: undefined,
+          entityStoreLoading: false,
+        }),
+      { wrapper: TestProviders }
+    );
+
+    expect(mockSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterQuery: JSON.stringify({
+          bool: { must: [{ term: { 'user.name': 'myUserName' } }, NOT_EVENT_KIND_ASSET_FILTER] },
+        }),
+      })
+    );
+  });
+
+  it('ignores entityStoreLoading when entity store v2 is disabled', () => {
+    mockUseEntityStoreEuidApi.mockReturnValue({ euid: {} });
+
+    renderHook(() => useObservedUserDetails({ ...defaultProps, entityStoreLoading: true }), {
+      wrapper: TestProviders,
+    });
+
+    expect(mockSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterQuery: JSON.stringify({
+          bool: { must: [{ term: { 'user.name': 'myUserName' } }, NOT_EVENT_KIND_ASSET_FILTER] },
+        }),
+      })
+    );
+  });
+
   it('skip = true will cancel any running request', () => {
     const props = {
       ...defaultProps,

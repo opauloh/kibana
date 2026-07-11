@@ -195,6 +195,109 @@ describe('useHostDetails', () => {
     );
   });
 
+  it('does not run search while the entity-store record is loading and no record is available yet', () => {
+    mockUseUiSetting.mockReturnValue(true);
+    mockUseEntityStoreEuidApi.mockReturnValue({ euid: {} });
+
+    renderHook(() => useHostDetails({ ...defaultProps, entityStoreLoading: true }), {
+      wrapper: TestProviders,
+    });
+
+    expect(mockSearch).not.toHaveBeenCalled();
+  });
+
+  it('runs the scoped search when a record is present even while entityStoreLoading is true', () => {
+    mockUseUiSetting.mockReturnValue(true);
+    const recordFilter = { bool: { filter: [{ term: { 'host.id': 'host-1' } }] } };
+    const getEuidFilterBasedOnEntityRecord = jest.fn().mockReturnValue(recordFilter);
+    mockUseEntityStoreEuidApi.mockReturnValue({
+      euid: { dsl: { getEuidFilterBasedOnEntityRecord } },
+    });
+
+    const entityRecord = { entity: { id: 'host:host-1' }, host: { id: 'host-1' } };
+
+    renderHook(
+      () =>
+        useHostDetails({
+          ...defaultProps,
+          entityId: 'host:host-1',
+          entityRecord: entityRecord as never,
+          entityStoreLoading: true,
+        }),
+      { wrapper: TestProviders }
+    );
+
+    expect(mockSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterQuery: JSON.stringify(recordFilter),
+      })
+    );
+  });
+
+  it('runs the scoped record-based search once the entity-store record has resolved', () => {
+    mockUseUiSetting.mockReturnValue(true);
+    const recordFilter = { bool: { filter: [{ term: { 'host.id': 'host-1' } }] } };
+    const getEuidFilterBasedOnEntityRecord = jest.fn().mockReturnValue(recordFilter);
+    mockUseEntityStoreEuidApi.mockReturnValue({
+      euid: { dsl: { getEuidFilterBasedOnEntityRecord } },
+    });
+
+    const entityRecord = { entity: { id: 'host:host-1' }, host: { id: 'host-1' } };
+
+    renderHook(
+      () =>
+        useHostDetails({
+          ...defaultProps,
+          entityId: 'host:host-1',
+          entityRecord: entityRecord as never,
+          entityStoreLoading: false,
+        }),
+      { wrapper: TestProviders }
+    );
+
+    expect(mockSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterQuery: JSON.stringify(recordFilter),
+      })
+    );
+  });
+
+  it('runs the host.name fallback once the store has resolved with no record', () => {
+    mockUseUiSetting.mockReturnValue(true);
+    mockUseEntityStoreEuidApi.mockReturnValue({ euid: {} });
+
+    renderHook(
+      () =>
+        useHostDetails({
+          ...defaultProps,
+          entityId: undefined,
+          entityRecord: undefined,
+          entityStoreLoading: false,
+        }),
+      { wrapper: TestProviders }
+    );
+
+    expect(mockSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterQuery: JSON.stringify({ term: { 'host.name': 'my-macbook' } }),
+      })
+    );
+  });
+
+  it('ignores entityStoreLoading when entity store v2 is disabled', () => {
+    mockUseEntityStoreEuidApi.mockReturnValue({ euid: {} });
+
+    renderHook(() => useHostDetails({ ...defaultProps, entityStoreLoading: true }), {
+      wrapper: TestProviders,
+    });
+
+    expect(mockSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterQuery: JSON.stringify({ term: { 'host.name': 'my-macbook' } }),
+      })
+    );
+  });
+
   it('skip = true will cancel any running request', () => {
     const props = {
       ...defaultProps,

@@ -40,6 +40,14 @@ interface UseHostDetails {
    * indexed-field identity filter (via the EUID API) instead of a runtime-field `entity_id` term.
    */
   entityRecord?: EntityStoreRecord | null;
+  /**
+   * When entity store v2 is enabled, indicates the entity-store record is *actively* being fetched
+   * (react-query `isInitialLoading`, not raw `isLoading`). While `true` and no record is available
+   * yet, the observed query is skipped so the entity-store record stays the base and the complementary
+   * query runs once, correctly scoped (no broad `host.name` fallback flash first). A resolved
+   * `entityRecord` always runs the scoped query regardless of this flag.
+   */
+  entityStoreLoading?: boolean;
   id?: string;
   indexNames: string[];
   skip?: boolean;
@@ -51,6 +59,7 @@ export const useHostDetails = ({
   hostName,
   entityId,
   entityRecord,
+  entityStoreLoading = false,
   indexNames,
   id = ID,
   skip = false,
@@ -59,10 +68,15 @@ export const useHostDetails = ({
   const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2);
   const euidApi = useEntityStoreEuidApi();
 
+  // Only wait while the store is actively fetching AND we do not yet have a record to scope by.
+  // Once a record is available we always run the scoped query (never blocked by a stale loading flag).
+  const waitingForEntityStoreRecord = entityStoreLoading && !entityRecord;
+
   const shouldSkip =
     skip ||
     (!entityStoreV2Enabled && isEmpty(hostName)) ||
-    (entityStoreV2Enabled && (!euidApi?.euid || (isEmpty(entityId) && isEmpty(hostName))));
+    (entityStoreV2Enabled &&
+      (!euidApi?.euid || waitingForEntityStoreRecord || (isEmpty(entityId) && isEmpty(hostName))));
 
   const euidFilter = useMemo(() => {
     if (shouldSkip) {
