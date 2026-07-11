@@ -54,9 +54,7 @@ export const useObservedHost = (
   // disabled store query reports `isLoading: true` forever in v4, which would otherwise skip the
   // observed query and hang the panel spinner permanently.
   const entityStoreLoading = Boolean(entityFromStore?.isInitialLoading);
-  const hasEntityStoreRecord = Boolean(
-    entityFromStore?.entityRecord ?? entityFromStore?.entity
-  );
+  const hasEntityStoreRecord = Boolean(entityFromStore?.entityRecord ?? entityFromStore?.entity);
   // While the entity-store record is actively resolving, keep the entity-store branch (base) so the
   // observed query is skipped and does not flash the broad `host.name` fallback before the scoped query.
   const useEntityStoreObservedData =
