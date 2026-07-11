@@ -129,17 +129,56 @@ describe('useHostDetails', () => {
     expect(mockSearch).not.toHaveBeenCalled();
   });
 
-  it('uses entity_id in filterQuery when entity store v2 is enabled', () => {
+  it('uses the record-based EUID filter in filterQuery when entity store v2 is enabled', () => {
     mockUseUiSetting.mockReturnValue(true);
-    mockUseEntityStoreEuidApi.mockReturnValue({ euid: {} });
-
-    renderHook(() => useHostDetails({ ...defaultProps, entityId: 'my-macbook' }), {
-      wrapper: TestProviders,
+    const recordFilter = { bool: { filter: [{ term: { 'host.id': 'host-1' } }] } };
+    const getEuidFilterBasedOnEntityRecord = jest.fn().mockReturnValue(recordFilter);
+    mockUseEntityStoreEuidApi.mockReturnValue({
+      euid: { dsl: { getEuidFilterBasedOnEntityRecord } },
     });
+
+    const entityRecord = { entity: { id: 'host:host-1' }, host: { id: 'host-1' } };
+
+    renderHook(
+      () =>
+        useHostDetails({
+          ...defaultProps,
+          entityId: 'host:host-1',
+          entityRecord: entityRecord as never,
+        }),
+      { wrapper: TestProviders }
+    );
+
+    expect(getEuidFilterBasedOnEntityRecord).toHaveBeenCalledWith('host', entityRecord);
+    expect(mockSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterQuery: JSON.stringify(recordFilter),
+      })
+    );
+  });
+
+  it('falls back to host.name filter when the record-based EUID filter is undefined', () => {
+    mockUseUiSetting.mockReturnValue(true);
+    const getEuidFilterBasedOnEntityRecord = jest.fn().mockReturnValue(undefined);
+    mockUseEntityStoreEuidApi.mockReturnValue({
+      euid: { dsl: { getEuidFilterBasedOnEntityRecord } },
+    });
+
+    const entityRecord = { entity: { id: 'host:host-1' }, host: {} };
+
+    renderHook(
+      () =>
+        useHostDetails({
+          ...defaultProps,
+          entityId: 'host:host-1',
+          entityRecord: entityRecord as never,
+        }),
+      { wrapper: TestProviders }
+    );
 
     expect(mockSearch).toHaveBeenCalledWith(
       expect.objectContaining({
-        filterQuery: JSON.stringify({ term: { entity_id: 'my-macbook' } }),
+        filterQuery: JSON.stringify({ term: { 'host.name': 'my-macbook' } }),
       })
     );
   });

@@ -17,6 +17,7 @@ import * as i18n from './translations';
 import type { InspectResponse } from '../../../../../types';
 import { useSearchStrategy } from '../../../../../common/containers/use_search_strategy';
 import { useUiSetting } from '../../../../../common/lib/kibana';
+import type { EntityStoreRecord } from '../../../../../flyout/entity_details/shared/hooks/use_entity_from_store';
 
 export const ID = 'hostsDetailsQuery';
 
@@ -34,6 +35,11 @@ interface UseHostDetails {
   /** When missing or empty, the host details search is not run (avoids invalid strategy requests). */
   hostName: string;
   entityId?: string;
+  /**
+   * Resolved entity-store record. When entity store v2 is enabled it is used to build an
+   * indexed-field identity filter (via the EUID API) instead of a runtime-field `entity_id` term.
+   */
+  entityRecord?: EntityStoreRecord | null;
   id?: string;
   indexNames: string[];
   skip?: boolean;
@@ -44,6 +50,7 @@ export const useHostDetails = ({
   endDate,
   hostName,
   entityId,
+  entityRecord,
   indexNames,
   id = ID,
   skip = false,
@@ -65,16 +72,22 @@ export const useHostDetails = ({
     if (!entityStoreV2Enabled) {
       // For legacy entity store, query by host.name
       return { term: { 'host.name': hostName } };
-    } else {
-      // For entity store v2, query by entity_id (runtime field)
-      if (entityId) {
-        return { term: { entity_id: entityId } };
-      } else if (hostName) {
-        // If entityId is not available, fall back to host.name for querying
-        return { term: { 'host.name': hostName } };
-      }
     }
-  }, [entityStoreV2Enabled, shouldSkip, hostName, entityId]);
+
+    // For entity store v2, resolve the entity via an indexed-field identity filter built from the
+    // entity-store record. This replaces the previous `entity_id` runtime field, which forced
+    // Elasticsearch to run the EUID Painless script on every document in the time range.
+    const recordFilter = entityRecord
+      ? euidApi?.euid?.dsl.getEuidFilterBasedOnEntityRecord('host', entityRecord)
+      : undefined;
+    if (recordFilter) {
+      return recordFilter;
+    }
+    // Fall back to host.name when the record cannot yield an EUID identity filter.
+    if (hostName) {
+      return { term: { 'host.name': hostName } };
+    }
+  }, [entityStoreV2Enabled, shouldSkip, hostName, entityRecord, euidApi?.euid]);
 
   const {
     loading,

@@ -59,6 +59,7 @@ export const useObservedHost = (
       endDate: to,
       hostName,
       entityId: useEntityStoreObservedData ? entityFromStore?.entityRecord?.entity?.id : undefined,
+      entityRecord: useEntityStoreObservedData ? entityFromStore?.entityRecord : undefined,
       indexNames: indexPatterns,
       id: HOST_PANEL_RISK_SCORE_QUERY_ID,
       skip: isInitializing,

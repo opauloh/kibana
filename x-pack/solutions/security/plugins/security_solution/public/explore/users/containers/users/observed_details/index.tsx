@@ -16,6 +16,7 @@ import type { UserItem } from '../../../../../../common/search_strategy/security
 import { NOT_EVENT_KIND_ASSET_FILTER } from '../../../../../../common/search_strategy/security_solution/users/common';
 import { useSearchStrategy } from '../../../../../common/containers/use_search_strategy';
 import { useUiSetting } from '../../../../../common/lib/kibana';
+import type { EntityStoreRecord } from '../../../../../flyout/entity_details/shared/hooks/use_entity_from_store';
 
 export const OBSERVED_USER_QUERY_ID = 'observedUsersDetailsQuery';
 
@@ -32,6 +33,11 @@ interface UseUserDetails {
   endDate: string;
   userName: string;
   entityId?: string;
+  /**
+   * Resolved entity-store record. When entity store v2 is enabled it is used to build an
+   * indexed-field identity filter (via the EUID API) instead of a runtime-field `entity_id` term.
+   */
+  entityRecord?: EntityStoreRecord | null;
   id?: string;
   indexNames: string[];
   skip?: boolean;
@@ -42,6 +48,7 @@ export const useObservedUserDetails = ({
   endDate,
   userName,
   entityId,
+  entityRecord,
   indexNames,
   id = OBSERVED_USER_QUERY_ID,
   skip = false,
@@ -63,16 +70,22 @@ export const useObservedUserDetails = ({
     if (!entityStoreV2Enabled) {
       // For legacy entity store, query by user.name
       return { term: { 'user.name': userName } };
-    } else {
-      // For entity store v2, query by entity_id (runtime field)
-      if (entityId) {
-        return { term: { entity_id: entityId } };
-      } else if (userName) {
-        // If entityId is not available, fall back to user.name for querying
-        return { term: { 'user.name': userName } };
-      }
     }
-  }, [entityStoreV2Enabled, shouldSkip, userName, entityId]);
+
+    // For entity store v2, resolve the entity via an indexed-field identity filter built from the
+    // entity-store record. This replaces the previous `entity_id` runtime field, which forced
+    // Elasticsearch to run the EUID Painless script on every document in the time range.
+    const recordFilter = entityRecord
+      ? euidApi?.euid?.dsl.getEuidFilterBasedOnEntityRecord('user', entityRecord)
+      : undefined;
+    if (recordFilter) {
+      return recordFilter;
+    }
+    // Fall back to user.name when the record cannot yield an EUID identity filter.
+    if (userName) {
+      return { term: { 'user.name': userName } };
+    }
+  }, [entityStoreV2Enabled, shouldSkip, userName, entityRecord, euidApi?.euid]);
 
   const {
     loading,
