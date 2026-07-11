@@ -59,6 +59,7 @@ export const useObservedUser = (
       startDate: from,
       userName,
       entityId: useEntityStoreObservedData ? entityFromStore?.entityRecord?.entity?.id : undefined,
+      entityRecord: useEntityStoreObservedData ? entityFromStore?.entityRecord : undefined,
       indexNames: indexPatterns,
       id: USER_PANEL_RISK_SCORE_QUERY_ID,
       skip: isInitializing,

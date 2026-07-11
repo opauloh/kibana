@@ -226,7 +226,7 @@ const HostDetailsComponent: React.FC<HostDetailsProps> = ({
     if (!entityStoreV2Enabled || noEntityInStore) {
       return legacyFilters;
     }
-    const entityDslFilter = euidApi?.euid?.dsl.getEuidFilterBasedOnDocument(
+    const entityDslFilter = euidApi?.euid?.dsl.getEuidFilterBasedOnEntityRecord(
       EntityType.host,
       entityFromStoreResult.entityRecord
     );
@@ -253,6 +253,7 @@ const HostDetailsComponent: React.FC<HostDetailsProps> = ({
     startDate: from,
     hostName: detailName,
     entityId: entityStoreV2Enabled ? entityFromStoreResult.entityRecord?.entity?.id : undefined,
+    entityRecord: entityStoreV2Enabled ? entityFromStoreResult.entityRecord : undefined,
     indexNames: selectedPatterns,
     skip: selectedPatterns.length === 0,
   });
