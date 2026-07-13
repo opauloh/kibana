@@ -45,7 +45,7 @@ interface UseUserDetails {
    * query runs once, correctly scoped (no broad `user.name` fallback flash first). A resolved
    * `entityRecord` always runs the scoped query regardless of this flag.
    */
-  entityStoreLoading?: boolean;
+  entityStoreInitialLoading?: boolean;
   id?: string;
   indexNames: string[];
   skip?: boolean;
@@ -57,7 +57,7 @@ export const useObservedUserDetails = ({
   userName,
   entityId,
   entityRecord,
-  entityStoreLoading = false,
+  entityStoreInitialLoading = false,
   indexNames,
   id = OBSERVED_USER_QUERY_ID,
   skip = false,
@@ -68,7 +68,7 @@ export const useObservedUserDetails = ({
 
   // Only wait while the store is actively fetching AND we do not yet have a record to scope by.
   // Once a record is available we always run the scoped query (never blocked by a stale loading flag).
-  const waitingForEntityStoreRecord = entityStoreLoading && !entityRecord;
+  const waitingForEntityStoreRecord = entityStoreInitialLoading && !entityRecord;
 
   const shouldSkip =
     skip ||
@@ -89,9 +89,7 @@ export const useObservedUserDetails = ({
     // For entity store v2, resolve the entity via an indexed-field identity filter built from the
     // entity-store record. This replaces the previous `entity_id` runtime field, which forced
     // Elasticsearch to run the EUID Painless script on every document in the time range.
-    const recordFilter = entityRecord
-      ? euidApi?.euid?.dsl.getEuidFilterBasedOnEntityRecord('user', entityRecord)
-      : undefined;
+    const recordFilter = euidApi?.euid?.dsl?.getEuidFilterBasedOnEntityRecord('user', entityRecord);
     if (recordFilter) {
       return recordFilter;
     }

@@ -283,26 +283,13 @@ function buildResolvedEvaluationSourceClause(
   evaluation: FieldEvaluation,
   resolvedValue: string
 ): QueryDslQueryContainer | undefined {
-  const { exactMatchFields, prefixMatchFields } = getSourceFieldNames(evaluation.sources);
-
-  const buildValuesClause = (values: string[]): QueryDslQueryContainer => {
-    const should: QueryDslQueryContainer[] = [];
-    for (const value of values) {
-      for (const field of exactMatchFields) {
-        should.push({ term: { [field]: value } });
-      }
-      for (const field of prefixMatchFields) {
-        should.push({ prefix: { [field]: value } });
-      }
-    }
-    return { bool: { should, minimum_should_match: 1 } };
-  };
-
   const shoulds: QueryDslQueryContainer[] = [];
   for (const clause of evaluation.whenClauses) {
     if ('sourceMatchesAny' in clause) {
       if (clause.then === resolvedValue) {
-        shoulds.push(buildValuesClause(clause.sourceMatchesAny));
+        shoulds.push(
+          buildSourceClauseDsl(evaluation, { type: 'values', values: clause.sourceMatchesAny })
+        );
       }
       continue;
     }
@@ -334,13 +321,13 @@ function buildResolvedEvaluationSourceClause(
   // No whenClause produces this value: it is either the evaluation fallback (source fields
   // absent) or a pass-through raw source value.
   if (resolvedValue === evaluation.fallbackValue) {
-    const allSourceFields = [...exactMatchFields, ...prefixMatchFields];
-    if (allSourceFields.length === 0) {
+    const { exactMatchFields, prefixMatchFields } = getSourceFieldNames(evaluation.sources);
+    if (exactMatchFields.length === 0 && prefixMatchFields.length === 0) {
       return undefined;
     }
-    return { bool: { must: allSourceFields.map(fieldMissingOrEmptyDsl) } };
+    return buildSourceClauseDsl(evaluation, { type: 'unknown' });
   }
-  return buildValuesClause([resolvedValue]);
+  return buildSourceClauseDsl(evaluation, { type: 'values', values: [resolvedValue] });
 }
 
 /**

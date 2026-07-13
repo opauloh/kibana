@@ -53,12 +53,12 @@ export const useObservedHost = (
   // Use `isInitialLoading` (react-query v4 `isLoading && isFetching`), not raw `isLoading`: an idle or
   // disabled store query reports `isLoading: true` forever in v4, which would otherwise skip the
   // observed query and hang the panel spinner permanently.
-  const entityStoreLoading = Boolean(entityFromStore?.isInitialLoading);
+  const entityStoreInitialLoading = Boolean(entityFromStore?.isInitialLoading);
   const hasEntityStoreRecord = Boolean(entityFromStore?.entityRecord ?? entityFromStore?.entity);
   // While the entity-store record is actively resolving, keep the entity-store branch (base) so the
   // observed query is skipped and does not flash the broad `host.name` fallback before the scoped query.
   const useEntityStoreObservedData =
-    Boolean(entityFromStore) && (entityStoreLoading || hasEntityStoreRecord);
+    Boolean(entityFromStore) && (entityStoreInitialLoading || hasEntityStoreRecord);
 
   const [isLoading, { hostDetails, inspect: inspectObservedHost, refetch: refetchHostDetails }] =
     useHostDetails({
@@ -66,7 +66,7 @@ export const useObservedHost = (
       hostName,
       entityId: hasEntityStoreRecord ? entityFromStore?.entityRecord?.entity?.id : undefined,
       entityRecord: hasEntityStoreRecord ? entityFromStore?.entityRecord : undefined,
-      entityStoreLoading,
+      entityStoreInitialLoading,
       indexNames: indexPatterns,
       id: HOST_PANEL_RISK_SCORE_QUERY_ID,
       skip: isInitializing,

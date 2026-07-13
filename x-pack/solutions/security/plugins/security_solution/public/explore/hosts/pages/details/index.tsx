@@ -254,7 +254,7 @@ const HostDetailsComponent: React.FC<HostDetailsProps> = ({
     hostName: detailName,
     entityId: entityStoreV2Enabled ? entityFromStoreResult.entityRecord?.entity?.id : undefined,
     entityRecord: entityStoreV2Enabled ? entityFromStoreResult.entityRecord : undefined,
-    entityStoreLoading: entityStoreV2Enabled && entityFromStoreResult.isInitialLoading,
+    entityStoreInitialLoading: entityStoreV2Enabled && entityFromStoreResult.isInitialLoading,
     indexNames: selectedPatterns,
     skip: selectedPatterns.length === 0,
   });

@@ -199,14 +199,14 @@ describe('useHostDetails', () => {
     mockUseUiSetting.mockReturnValue(true);
     mockUseEntityStoreEuidApi.mockReturnValue({ euid: {} });
 
-    renderHook(() => useHostDetails({ ...defaultProps, entityStoreLoading: true }), {
+    renderHook(() => useHostDetails({ ...defaultProps, entityStoreInitialLoading: true }), {
       wrapper: TestProviders,
     });
 
     expect(mockSearch).not.toHaveBeenCalled();
   });
 
-  it('runs the scoped search when a record is present even while entityStoreLoading is true', () => {
+  it('runs the scoped search when a record is present even while entityStoreInitialLoading is true', () => {
     mockUseUiSetting.mockReturnValue(true);
     const recordFilter = { bool: { filter: [{ term: { 'host.id': 'host-1' } }] } };
     const getEuidFilterBasedOnEntityRecord = jest.fn().mockReturnValue(recordFilter);
@@ -222,7 +222,7 @@ describe('useHostDetails', () => {
           ...defaultProps,
           entityId: 'host:host-1',
           entityRecord: entityRecord as never,
-          entityStoreLoading: true,
+          entityStoreInitialLoading: true,
         }),
       { wrapper: TestProviders }
     );
@@ -250,7 +250,7 @@ describe('useHostDetails', () => {
           ...defaultProps,
           entityId: 'host:host-1',
           entityRecord: entityRecord as never,
-          entityStoreLoading: false,
+          entityStoreInitialLoading: false,
         }),
       { wrapper: TestProviders }
     );
@@ -272,7 +272,7 @@ describe('useHostDetails', () => {
           ...defaultProps,
           entityId: undefined,
           entityRecord: undefined,
-          entityStoreLoading: false,
+          entityStoreInitialLoading: false,
         }),
       { wrapper: TestProviders }
     );
@@ -284,10 +284,10 @@ describe('useHostDetails', () => {
     );
   });
 
-  it('ignores entityStoreLoading when entity store v2 is disabled', () => {
+  it('ignores entityStoreInitialLoading when entity store v2 is disabled', () => {
     mockUseEntityStoreEuidApi.mockReturnValue({ euid: {} });
 
-    renderHook(() => useHostDetails({ ...defaultProps, entityStoreLoading: true }), {
+    renderHook(() => useHostDetails({ ...defaultProps, entityStoreInitialLoading: true }), {
       wrapper: TestProviders,
     });
 

@@ -210,14 +210,14 @@ describe('useUserDetails', () => {
     mockUseUiSetting.mockReturnValue(true);
     mockUseEntityStoreEuidApi.mockReturnValue({ euid: {} });
 
-    renderHook(() => useObservedUserDetails({ ...defaultProps, entityStoreLoading: true }), {
+    renderHook(() => useObservedUserDetails({ ...defaultProps, entityStoreInitialLoading: true }), {
       wrapper: TestProviders,
     });
 
     expect(mockSearch).not.toHaveBeenCalled();
   });
 
-  it('runs the scoped search when a record is present even while entityStoreLoading is true', () => {
+  it('runs the scoped search when a record is present even while entityStoreInitialLoading is true', () => {
     mockUseUiSetting.mockReturnValue(true);
     const recordFilter = { bool: { filter: [{ term: { 'user.id': 'abc' } }] } };
     const getEuidFilterBasedOnEntityRecord = jest.fn().mockReturnValue(recordFilter);
@@ -236,7 +236,7 @@ describe('useUserDetails', () => {
           ...defaultProps,
           entityId: 'user:abc',
           entityRecord: entityRecord as never,
-          entityStoreLoading: true,
+          entityStoreInitialLoading: true,
         }),
       { wrapper: TestProviders }
     );
@@ -269,7 +269,7 @@ describe('useUserDetails', () => {
           ...defaultProps,
           entityId: 'user:abc',
           entityRecord: entityRecord as never,
-          entityStoreLoading: false,
+          entityStoreInitialLoading: false,
         }),
       { wrapper: TestProviders }
     );
@@ -293,7 +293,7 @@ describe('useUserDetails', () => {
           ...defaultProps,
           entityId: undefined,
           entityRecord: undefined,
-          entityStoreLoading: false,
+          entityStoreInitialLoading: false,
         }),
       { wrapper: TestProviders }
     );
@@ -307,10 +307,10 @@ describe('useUserDetails', () => {
     );
   });
 
-  it('ignores entityStoreLoading when entity store v2 is disabled', () => {
+  it('ignores entityStoreInitialLoading when entity store v2 is disabled', () => {
     mockUseEntityStoreEuidApi.mockReturnValue({ euid: {} });
 
-    renderHook(() => useObservedUserDetails({ ...defaultProps, entityStoreLoading: true }), {
+    renderHook(() => useObservedUserDetails({ ...defaultProps, entityStoreInitialLoading: true }), {
       wrapper: TestProviders,
     });
 

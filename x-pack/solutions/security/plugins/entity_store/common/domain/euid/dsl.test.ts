@@ -568,7 +568,51 @@ describe('getEuidDslFilterBasedOnEntityRecord', () => {
         user: { email: 'bob@example.com' },
       });
 
-      expect(result).toMatchSnapshot();
+      // `entra_id` is reachable from two whenClause arms, so the source clause must OR both, and it
+      // must not matter which one originally produced the namespace (see the determinism suite below).
+      expect(result).toEqual({
+        bool: {
+          filter: [
+            { term: { 'user.email': 'bob@example.com' } },
+            {
+              bool: {
+                minimum_should_match: 1,
+                should: [
+                  // asset_discovery path: event.kind=asset AND event.module=asset_discovery AND
+                  // cloud.provider=azure (the source key that maps to entra_id)
+                  {
+                    bool: {
+                      must: [
+                        {
+                          bool: {
+                            must: [
+                              { terms: { 'event.kind': ['asset'] } },
+                              { terms: { 'event.module': ['asset_discovery'] } },
+                            ],
+                          },
+                        },
+                        { match: { 'cloud.provider': 'azure' } },
+                      ],
+                    },
+                  },
+                  // traditional ranking path: the IdP source values for entra_id
+                  {
+                    bool: {
+                      minimum_should_match: 1,
+                      should: [
+                        { term: { 'event.module': 'azure' } },
+                        { prefix: { 'data_stream.dataset': 'azure' } },
+                        { term: { 'event.module': 'entityanalytics_entra_id' } },
+                        { prefix: { 'data_stream.dataset': 'entityanalytics_entra_id' } },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      });
     });
 
     it('local: filters on user.name + host.id with the local namespace gate condition', () => {
@@ -578,7 +622,18 @@ describe('getEuidDslFilterBasedOnEntityRecord', () => {
         host: { id: 'host-1' },
       });
 
-      expect(result).toMatchSnapshot();
+      // The local branch ranks on user.name + host.id (see userEntityDefinition euidRanking).
+      const filter = result?.bool?.filter as Array<{ term?: Record<string, string> }> | undefined;
+      expect(filter?.slice(0, 2)).toEqual([
+        { term: { 'user.name': 'jdoe' } },
+        { term: { 'host.id': 'host-1' } },
+      ]);
+      // The third clause is the `local` namespace gate translated via conditionToQueryDsl. Assert it
+      // exists as the only remaining clause and that nothing targets the evaluated entity.namespace
+      // destination or leaks into a higher-ranked `must` guard (local is the top-ranked branch).
+      expect(filter).toHaveLength(3);
+      expect(result?.bool?.must).toBeUndefined();
+      expect(JSON.stringify(result)).not.toContain('entity.namespace');
     });
 
     it('aws vs gcp: distinct cloud.provider disambiguation from the resolved namespace', () => {
@@ -615,6 +670,87 @@ describe('getEuidDslFilterBasedOnEntityRecord', () => {
         getEuidDslFilterBasedOnEntityRecord('user', { entity: { namespace: 'okta' } })
       ).toBeUndefined();
     });
+  });
+
+  describe('determinism: same resolved namespace + identity yields identical DSL regardless of input variation', () => {
+    // The builder reads only the record's already-resolved `entity.namespace` and identity fields —
+    // never the raw source fields (event.module / data_stream.dataset / cloud.provider) that
+    // originally derived the namespace. So once the namespace is resolved, you can't tell which path
+    // produced it, and you don't need to: every record with the same namespace + identity yields
+    // byte-identical DSL, whatever its shape or leftover raw fields. This is what makes trusting the
+    // record safe, and it is why we don't re-derive the namespace here.
+    const flatten = (obj: Record<string, unknown>, prefix = ''): Record<string, unknown> =>
+      Object.entries(obj).reduce<Record<string, unknown>>((acc, [key, value]) => {
+        const path = prefix ? `${prefix}.${key}` : key;
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          Object.assign(acc, flatten(value as Record<string, unknown>, path));
+        } else {
+          acc[path] = value;
+        }
+        return acc;
+      }, {});
+
+    const cases = [
+      {
+        name: 'entra_id (email identity)',
+        namespace: 'entra_id',
+        identity: { user: { email: 'bob@example.com' } },
+      },
+      {
+        name: 'okta (email identity)',
+        namespace: 'okta',
+        identity: { user: { email: 'alice@example.com' } },
+      },
+      {
+        name: 'active_directory (name + domain identity)',
+        namespace: 'active_directory',
+        identity: { user: { name: 'jane', domain: 'corp.com' } },
+      },
+      {
+        name: 'local (name + host.id identity)',
+        namespace: 'local',
+        identity: { user: { name: 'jdoe' }, host: { id: 'host-1' } },
+      },
+    ];
+
+    for (const { name, namespace, identity } of cases) {
+      it(`${name}: nested / flattened / _source / leftover raw fields all produce the same DSL`, () => {
+        const variations: Array<Record<string, unknown>> = [
+          // baseline nested record
+          { entity: { namespace }, ...identity },
+          // flattened (dotted-key) shape
+          flatten({ entity: { namespace }, ...identity }),
+          // wrapped as an Elasticsearch hit
+          { _source: { entity: { namespace }, ...identity } },
+          // leftover raw source fields that originally derived the namespace must be ignored
+          {
+            entity: { namespace },
+            ...identity,
+            event: { kind: 'asset', module: 'asset_discovery' },
+            cloud: { provider: 'azure' },
+            data_stream: { dataset: 'azure.signinlogs' },
+          },
+          // a stale/mismatched raw source field must NOT change the result — the resolved namespace
+          // on the record is authoritative
+          { entity: { namespace }, ...identity, event: { module: 'okta' } },
+          // incidental entity-store fields (id, asset criticality, @timestamp) are irrelevant
+          {
+            '@timestamp': '2026-04-22T12:55:59.638Z',
+            entity: { namespace, id: `user:whatever@${namespace}` },
+            asset: { criticality: 'high_impact' },
+            ...identity,
+          },
+        ];
+
+        const [expected, ...rest] = variations.map((record) =>
+          getEuidDslFilterBasedOnEntityRecord('user', record)
+        );
+        expect(expected).toBeDefined();
+        for (const filter of rest) {
+          expect(filter).toEqual(expected);
+        }
+      });
+    }
   });
 });
 
