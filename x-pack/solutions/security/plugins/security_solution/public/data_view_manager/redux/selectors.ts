@@ -24,25 +24,6 @@ export const sharedStateSelector = createSelector(
   (dataViewManager) => dataViewManager.shared
 );
 
-/**
- * Resolves the selected index patterns for a scope directly from the store state
- * (matching what `useSelectedPatterns` derives from the resolved data view's
- * `getIndexPattern()`, which is the spec `title`).
- *
- * This is intended for lazy reads inside callbacks (e.g. `store.getState()`), so
- * callers can obtain the patterns at call time without subscribing to (and
- * re-rendering on) data view changes for a scope they don't actually render.
- */
-export const selectDataViewPatternsForScope = (state: RootState, scope: PageScope): string[] => {
-  const { dataViewId } = state.dataViewManager[scope];
-  if (!dataViewId) {
-    return [];
-  }
-  const { dataViews, adhocDataViews } = state.dataViewManager.shared;
-  const spec = [...dataViews, ...adhocDataViews].find((dataView) => dataView.id === dataViewId);
-  return spec?.title ? spec.title.split(',') : [];
-};
-
 // NOTE: This will be subject to cleanup tasks https://github.com/elastic/security-team/issues/11959
 export const signalIndexNameSelector = createSelector(
   [(state: RootState) => state.dataViewManager],

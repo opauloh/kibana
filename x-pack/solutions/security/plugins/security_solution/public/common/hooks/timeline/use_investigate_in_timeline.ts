@@ -6,15 +6,14 @@
  */
 
 import { useCallback } from 'react';
-import { useDispatch, useSelector, useStore } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import type { Filter, Query } from '@kbn/es-query';
+import { useSelectedPatterns } from '../../../data_view_manager/hooks/use_selected_patterns';
 import { PageScope } from '../../../data_view_manager/constants';
-import { selectDataViewPatternsForScope } from '../../../data_view_manager/redux/selectors';
 import { useSelectDataView } from '../../../data_view_manager/hooks/use_select_data_view';
 import { useCreateTimeline } from '../../../timelines/hooks/use_create_timeline';
 import { applyKqlFilterQuery, setFilters, updateProviders } from '../../../timelines/store/actions';
 import type { DataProvider } from '../../../../common/types';
-import type { State } from '../../store';
 import { sourcererSelectors } from '../../store';
 import { inputsActions } from '../../store/inputs';
 import { InputsModelId } from '../../store/inputs/constants';
@@ -60,10 +59,10 @@ interface InvestigateInTimelineArgs {
  */
 export const useInvestigateInTimeline = () => {
   const dispatch = useDispatch();
-  const store = useStore<State>();
 
   const signalIndexName = useSelector(sourcererSelectors.signalIndexName);
   const defaultDataView = useSelector(sourcererSelectors.defaultDataView);
+  const timelineSelectedPatterns = useSelectedPatterns(PageScope.timeline);
 
   const clearTimelineTemplate = useCreateTimeline({
     timelineId: TimelineId.active,
@@ -91,17 +90,6 @@ export const useInvestigateInTimeline = () => {
       const clearTimeline = hasTemplateProviders ? clearTimelineTemplate : clearTimelineDefault;
 
       if (dataProviders || filters || query) {
-        // Capture the timeline's current index patterns before `clearTimeline` resets the
-        // data view. Reading from the store here (instead of subscribing via
-        // `useSelectedPatterns` at render time) keeps this hook from re-rendering its
-        // consumers whenever the timeline data view changes (which happens every time the
-        // timeline opens). Otherwise expensive datatables that only use this hook for a row
-        // action - e.g. the entity analytics grid - would re-render on every timeline open.
-        const timelineSelectedPatterns = selectDataViewPatternsForScope(
-          store.getState(),
-          PageScope.timeline
-        );
-
         // Reset the current timeline
         if (timeRange) {
           await clearTimeline({
@@ -171,7 +159,7 @@ export const useInvestigateInTimeline = () => {
       setSelectedDataView,
       defaultDataView.id,
       signalIndexName,
-      store,
+      timelineSelectedPatterns,
     ]
   );
 
