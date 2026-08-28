@@ -115,6 +115,11 @@ export type WatchUpdateResult =
   | { outcome: 'unavailable' }
   | { outcome: 'failed' };
 
+export type WatchScheduleResult =
+  | { outcome: 'scheduled' }
+  | { outcome: 'not-found' }
+  | { outcome: 'unavailable' };
+
 export class WatchesService {
   constructor(
     private readonly management: WatchWorkflowsManagementClient | undefined,
@@ -565,6 +570,37 @@ export class WatchesService {
 
     const response = await this.get(registration.id, spaceId, request);
     return response ? { outcome: 'updated', response } : { outcome: 'not-found' };
+  }
+
+  /**
+   * Registers the space-scoped Task Manager schedule for a watch's `scheduled` trigger.
+   *
+   * PND installs its watches through the managed static-install path, which writes the workflow
+   * document but never wires the scheduler; scheduling only happens once an enablement update
+   * reaches the Workflows management API. This re-asserts `enabled: true` for the caller's space so
+   * `syncSchedulerAfterSave` programs the trigger's task there. Idempotent — Task Manager updates
+   * the deterministic task in place when it already exists.
+   */
+  async ensureSchedule(
+    watchId: string,
+    spaceId: string,
+    request: KibanaRequest
+  ): Promise<WatchScheduleResult> {
+    if (!this.management) {
+      return { outcome: 'unavailable' };
+    }
+
+    await this.installationReady;
+
+    const detail = await this.management.getWorkflow(watchId, spaceId);
+    if (!detail) {
+      return { outcome: 'not-found' };
+    }
+
+    await this.management.updateWorkflow(watchId, { enabled: true }, spaceId, request);
+    // Keep the mock-mode store in step so a subsequent read reflects the enablement.
+    setStoredWatchEnabled(watchId, true);
+    return { outcome: 'scheduled' };
   }
 
   /* ---------------------------------------------------------------------- */

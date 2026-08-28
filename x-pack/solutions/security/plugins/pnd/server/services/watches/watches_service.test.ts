@@ -241,6 +241,113 @@ describe('WatchesService', () => {
     });
   });
 
+  describe('ensureSchedule — registers the space-scoped Task Manager schedule', () => {
+    it('re-asserts enabled=true so the scheduled trigger is programmed for the space', async () => {
+      const { client, updateWorkflow } = createFakeClient();
+      // The managed doc exists; static install left it unscheduled.
+      (client.getWorkflow as jest.Mock).mockResolvedValue({ id: FLOOR, enabled: true });
+
+      const result = await createService(client).ensureSchedule(FLOOR, SPACE, request);
+
+      expect(result).toEqual({ outcome: 'scheduled' });
+      expect(updateWorkflow).toHaveBeenCalledWith(FLOOR, { enabled: true }, SPACE, request);
+    });
+
+    it('reports not-found when the workflow does not exist', async () => {
+      const { client, updateWorkflow } = createFakeClient();
+      (client.getWorkflow as jest.Mock).mockResolvedValue(null);
+
+      const result = await createService(client).ensureSchedule(FLOOR, SPACE, request);
+
+      expect(result).toEqual({ outcome: 'not-found' });
+      expect(updateWorkflow).not.toHaveBeenCalled();
+    });
+
+    it('reports unavailable when Workflows management is not wired', async () => {
+      const result = await createService(undefined).ensureSchedule(FLOOR, SPACE, request);
+
+      expect(result).toEqual({ outcome: 'unavailable' });
+    });
+  });
+
+  describe('settings — written to the store', () => {
+    it('returns the updated settings alongside the watch', async () => {
+      const service = createService(createFakeClient().client);
+
+      const result = await service.update(FLOOR, { autonomyLevel: 'supervised' }, SPACE, request);
+
+      expect(result.outcome).toBe('updated');
+      expect(result.outcome === 'updated' && result.response.settings?.autonomy).toBe('supervised');
+    });
+
+    it('does not touch the workflow for a settings-only patch', async () => {
+      const { client, updateWorkflow } = createFakeClient();
+
+      await createService(client).update(FLOOR, { autonomyLevel: 'assisted' }, SPACE, request);
+
+      expect(updateWorkflow).not.toHaveBeenCalled();
+    });
+
+    it('applies enabled and settings together in one patch', async () => {
+      const { client, updateWorkflow } = createFakeClient();
+
+      const result = await createService(client).update(
+        FLOOR,
+        { enabled: false, autonomyLevel: 'assisted' },
+        SPACE,
+        request
+      );
+
+      expect(updateWorkflow).toHaveBeenCalledWith(FLOOR, { enabled: false }, SPACE, request);
+      expect(result.outcome === 'updated' && result.response.watch.enabled).toBe(false);
+      expect(result.outcome === 'updated' && result.response.settings?.autonomy).toBe('assisted');
+    });
+
+    it('rejects a patch the watch does not offer', async () => {
+      const service = createService(createFakeClient().client);
+
+      const gate = await service.update(
+        FLOOR,
+        { approvalGate: { gateId: 'host-isolation', requirement: 'in-scope' } },
+        SPACE,
+        request
+      );
+      expect(gate).toEqual({ outcome: 'rejected', what: 'approval gate "host-isolation"' });
+
+      const schedule = await service.update(
+        FLOOR,
+        { triggers: { scheduleId: 'every-century' } },
+        SPACE,
+        request
+      );
+      expect(schedule).toEqual({ outcome: 'rejected', what: 'trigger settings' });
+    });
+
+    it('leaves the workflow untouched when a settings patch in the same body is rejected', async () => {
+      const { client, updateWorkflow } = createFakeClient();
+      const service = createService(client);
+
+      const result = await service.update(
+        FLOOR,
+        { enabled: false, triggers: { scheduleId: 'every-century' } },
+        SPACE,
+        request
+      );
+
+      expect(result).toEqual({ outcome: 'rejected', what: 'trigger settings' });
+      expect(updateWorkflow).not.toHaveBeenCalled();
+      expect((await service.get(FLOOR, SPACE))?.watch.enabled).toBe(true);
+    });
+
+    it('refuses settings writes when not backed by the store', async () => {
+      const service = createService(createFakeClient().client, false);
+
+      const result = await service.update(FLOOR, { autonomyLevel: 'assisted' }, SPACE, request);
+
+      expect(result.outcome).toBe('unavailable');
+    });
+  });
+
   describe('managed settings persistence', () => {
     it('uses managed template values in mock presentation mode too', async () => {
       const harness = createPersistentHarness();

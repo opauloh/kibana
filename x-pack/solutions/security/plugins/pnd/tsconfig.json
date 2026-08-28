@@ -37,6 +37,9 @@
     "@kbn/agent-builder-server",
     "@kbn/core-http-router-server-mocks",
     "@kbn/elastic-assistant-common",
-    "@kbn/core-http-server"
+    "@kbn/core-http-server",
+    "@kbn/inference-connectors",
+    "@kbn/code-editor",
+    "@kbn/monaco"
   ]
 }

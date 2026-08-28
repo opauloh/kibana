@@ -16,6 +16,7 @@ import {
   EuiSpacer,
   EuiText,
 } from '@elastic/eui';
+import { OpenAdWorkerConfigButton } from '../../components/ad_worker_config';
 import { PndPageSection } from '../../components/layout/pnd_page_section';
 import { PndPageHeader } from '../../components/pnd_page_header';
 import { usePndDocTitle } from '../../hooks/use_pnd_doc_title';
@@ -129,6 +130,10 @@ export const SettingsPage: React.FC = () => {
           <p>{i18n.USE_MOCK_DATA_SCOPE_NOTE}</p>
         </EuiText>
       </EuiPanel>
+
+      <EuiSpacer size="l" />
+
+      <OpenAdWorkerConfigButton />
     </PndPageSection>
   );
 };
